@@ -13,12 +13,14 @@ export default function UserClub() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-    const handleClubClick = (club: Club) => {
+  const handleClubClick = (club: Club) => {
     // Store the selected club in localStorage for the club page
     localStorage.setItem('selectedClub', JSON.stringify(club));
     // Redirect to the club main page
     router.push(`/clubs/${club.club_id}`);
   };
+
+
 
   useEffect(() => {
     const fetchUserClub = async () => {
@@ -137,12 +139,7 @@ export default function UserClub() {
                 <div className="font-medium text-blue-900">{club.nb_players} player{club.nb_players !== 1 ? 's' : ''}</div>
               </div>
               
-              <div>
-                <span className="text-blue-600">Club ID:</span>
-                <div className="font-mono text-xs bg-blue-50 text-blue-800 px-2 py-1 rounded">
-                  {club.club_id.slice(0, 8)}...
-                </div>
-              </div>
+
             </div>
           </div>
         ))}

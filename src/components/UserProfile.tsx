@@ -20,7 +20,6 @@ const UserProfile: React.FC = () => {
         </div>
         <div className="text-left">
           <h3 className="text-xl font-semibold text-gray-800">{user.email}</h3>
-          <p className="text-gray-600">ID: {user.user_id}</p>
         </div>
       </div>
       

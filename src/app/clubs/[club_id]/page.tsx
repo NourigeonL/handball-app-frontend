@@ -6,12 +6,21 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Club, ClubInfo } from '@/types/clubs';
 import { authenticatedGet } from '@/utils/api';
 import Link from 'next/link';
+import ProtectedRoute from '@/components/ProtectedRoute';
 
 
 export default function ClubMainPage() {
+  return (
+    <ProtectedRoute>
+      <ClubContent />
+    </ProtectedRoute>
+  );
+}
+
+function ClubContent() {
   const params = useParams();
   const router = useRouter();
-  const { isAuthenticated, getAuthToken } = useAuth();
+  const { getAuthToken } = useAuth();
   const [club, setClub] = useState<Club | null>(null);
   const [clubInfo, setClubInfo] = useState<ClubInfo | null>(null);
   const [loading, setLoading] = useState(true);
@@ -52,9 +61,7 @@ export default function ClubMainPage() {
     };
 
     fetchClubInfo();
-  }, [params.club_id]);
-
-
+  }, [params.club_id, getAuthToken]);
 
   if (loading) {
     return (
@@ -99,15 +106,13 @@ export default function ClubMainPage() {
 
   return (
     <div className="p-8">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">{club.name}</h1>
-          {isAuthenticated && (
+        <div className="max-w-7xl mx-auto">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">{club.name}</h1>
             <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
               Member
             </span>
-          )}
-        </div>
+          </div>
         
         <div className="grid gap-8 lg:grid-cols-3">
           {/* Club Overview */}
@@ -205,24 +210,12 @@ export default function ClubMainPage() {
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
               
                              <div className="space-y-3">
-                 {isAuthenticated ? (
                    <div className="text-center p-4 bg-green-50 rounded-lg">
                      <p className="text-green-800 text-sm mb-2">You are a member of this club</p>
                      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
                        Active Member
                      </span>
                    </div>
-                 ) : (
-                   <div className="text-center p-4 bg-blue-50 rounded-lg">
-                     <p className="text-blue-800 text-sm mb-2">Sign in to view club details</p>
-                     <Link 
-                       href="/" 
-                       className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
-                     >
-                       Sign In
-                     </Link>
-                   </div>
-                 )}
                  
                  <Link 
                    href="/clubs" 

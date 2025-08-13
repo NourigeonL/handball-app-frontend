@@ -1,21 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { Club } from '@/types/clubs';
 
 export default function ClubsList() {
-  const router = useRouter();
   const [clubs, setClubs] = useState<Club[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-    const handleClubClick = (club: Club) => {
-    // Store the selected club in localStorage for the club page
-    localStorage.setItem('selectedClub', JSON.stringify(club));
-    // Redirect to the club main page
-    router.push(`/clubs/${club.club_id}`);
-  };
+
 
   useEffect(() => {
     const fetchClubs = async () => {
@@ -78,8 +71,7 @@ export default function ClubsList() {
         {clubs.map((club) => (
           <div 
             key={club.club_id}
-            className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden border border-gray-100 cursor-pointer transform hover:scale-105 transition-all duration-200"
-            onClick={() => handleClubClick(club)}
+            className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100"
           >
             <div className="p-6">
               <div className="flex items-start justify-between mb-4">
@@ -102,12 +94,7 @@ export default function ClubsList() {
                 </div>
               )}
               
-              <div className="flex items-center justify-between text-sm text-gray-500">
-                <span>Club ID:</span>
-                <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded">
-                  {club.club_id.slice(0, 8)}...
-                </span>
-              </div>
+
             </div>
           </div>
         ))}

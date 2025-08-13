@@ -59,10 +59,10 @@ const GoogleLogin: React.FC = () => {
     if (buttonElement) {
       window.google.accounts.id.renderButton(buttonElement, {
         theme: 'outline',
-        size: 'large',
-        text: 'signin_with',
+        size: 'medium',
+        text: 'signin',
         shape: 'rectangular',
-        width: 300,
+        width: 120,
       });
     }
   };
@@ -99,17 +99,8 @@ const GoogleLogin: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col items-center space-y-4 p-6 bg-white rounded-lg shadow-md">
-      <h2 className="text-2xl font-bold text-gray-800">Welcome to Handball App</h2>
-      <p className="text-gray-600 text-center">
-        Sign in with your Google account to continue
-      </p>
-      
-      <div id="google-signin-button" className="mt-4"></div>
-      
-      <p className="text-xs text-gray-500 text-center mt-4">
-        By signing in, you agree to our terms of service and privacy policy
-      </p>
+    <div className="flex flex-col items-center">
+      <div id="google-signin-button"></div>
     </div>
   );
 };

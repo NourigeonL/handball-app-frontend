@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, AuthState, LoginResponse } from '@/types/auth';
+import { useRouter } from 'next/navigation';
 
 interface AuthContextType extends AuthState {
   login: (googleToken: string) => Promise<void>;
@@ -24,6 +25,7 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+  const router = useRouter();
   const [authState, setAuthState] = useState<AuthState>({
     user: null,
     isAuthenticated: false,
@@ -111,6 +113,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       isAuthenticated: false,
       isLoading: false,
     });
+    
+    // Redirect to home page after logout
+    router.push('/');
   };
 
   const getAuthToken = () => {

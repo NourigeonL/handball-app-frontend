@@ -1,20 +1,22 @@
 'use client';
 
-import Link from 'next/link';
+import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import GoogleLogin from '@/components/GoogleLogin';
+import Link from 'next/link';
 
-export default function Navigation() {
-  const { user, logout } = useAuth();
+const Navigation: React.FC = () => {
+  const { user, isAuthenticated, logout } = useAuth();
 
   return (
     <nav className="bg-white shadow-sm border-b border-gray-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {/* Logo and Brand */}
-          <div className="flex items-center">
+          {/* Logo/Brand */}
+          <div className="flex-shrink-0">
             <Link href="/" className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-lg">H</span>
+                <span className="text-white font-bold text-sm">H</span>
               </div>
               <span className="text-xl font-bold text-gray-900">Handball App</span>
             </Link>
@@ -28,46 +30,52 @@ export default function Navigation() {
             >
               Home
             </Link>
-            <Link 
-              href="/clubs" 
-              className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors"
-            >
-              Clubs Directory
-            </Link>
-            {user && (
-              <Link 
-                href="/profile" 
-                className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors"
-              >
-                Profile
-              </Link>
+            {isAuthenticated && (
+              <>
+                <Link 
+                  href="/profile" 
+                  className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                >
+                  Profile
+                </Link>
+                <Link 
+                  href="/clubs" 
+                  className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                >
+                  Clubs
+                </Link>
+              </>
             )}
           </div>
 
-          {/* User Actions */}
+          {/* Auth Section */}
           <div className="flex items-center space-x-4">
-            {user ? (
-              <div className="flex items-center space-x-3">
+            {isAuthenticated ? (
+              <div className="flex items-center space-x-4">
+                {/* User Info */}
                 <div className="flex items-center space-x-2">
                   <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
                     <span className="text-blue-600 font-semibold text-sm">
-                      {user.email.charAt(0).toUpperCase()}
+                      {user?.email?.charAt(0).toUpperCase()}
                     </span>
                   </div>
-                  <span className="hidden sm:block text-sm text-gray-700">
-                    {user.email}
+                  <span className="hidden sm:block text-sm text-gray-700 font-medium">
+                    {user?.email}
                   </span>
                 </div>
+                
+                {/* Logout Button */}
                 <button
                   onClick={logout}
-                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200"
                 >
                   Sign Out
                 </button>
               </div>
             ) : (
-              <div className="flex items-center space-x-3">
-                <span className="text-sm text-gray-600">Welcome to Handball App</span>
+              /* Login Button */
+              <div className="flex items-center space-x-2">
+                <GoogleLogin />
               </div>
             )}
           </div>
@@ -75,4 +83,6 @@ export default function Navigation() {
       </div>
     </nav>
   );
-}
+};
+
+export default Navigation;

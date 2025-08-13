@@ -1,9 +1,9 @@
 'use client';
 
 import { useAuth } from '@/contexts/AuthContext';
-import GoogleLogin from '@/components/GoogleLogin';
 import UserProfile from '@/components/UserProfile';
 import UserClub from '@/components/UserClub';
+import ClubsList from '@/components/ClubsList';
 import Link from 'next/link';
 
 export default function Home() {
@@ -23,14 +23,23 @@ export default function Home() {
         {isAuthenticated ? (
           <UserProfile />
         ) : (
-          <div className="text-center space-y-6">
-            <h1 className="text-4xl font-bold text-gray-900">
-              Welcome to Handball App
-            </h1>
-            <p className="text-xl text-gray-600">
-              Connect with your handball community
-            </p>
-            <GoogleLogin />
+          <div className="space-y-8">
+            <div className="text-center space-y-6">
+              <h1 className="text-4xl font-bold text-gray-900">
+                Welcome to Handball App
+              </h1>
+              <p className="text-xl text-gray-600">
+                Connect with your handball community
+              </p>
+              <p className="text-lg text-blue-600">
+                Please sign in using the button in the navigation bar above
+              </p>
+            </div>
+            
+            {/* Public Clubs List */}
+            <div className="mt-12">
+              <ClubsList />
+            </div>
           </div>
         )}
       </div>
