@@ -18,32 +18,21 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
-      <div className="w-full max-w-md space-y-6">
+    <div className="flex flex-col items-center justify-center p-8">
+      <div className="w-full max-w-4xl space-y-8">
         {isAuthenticated ? (
           <UserProfile />
         ) : (
-          <>
+          <div className="text-center space-y-6">
+            <h1 className="text-4xl font-bold text-gray-900">
+              Welcome to Handball App
+            </h1>
+            <p className="text-xl text-gray-600">
+              Connect with your handball community
+            </p>
             <GoogleLogin />
-            
-            {/* Show clubs info even for non-authenticated users */}
-            <div className="mt-6">
-              <UserClub />
-            </div>
-          </>
-        )}
-        
-        {/* Navigation Links */}
-        <div className="text-center space-y-3">
-          <div className="border-t border-gray-200 pt-4">
-            <Link 
-              href="/clubs" 
-              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              View Handball Clubs
-            </Link>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

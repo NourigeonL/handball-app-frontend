@@ -27,13 +27,7 @@ const UserProfile: React.FC = () => {
       {/* User's Club Information */}
       <UserClub />
       
-      <div className="flex space-x-3">
-        <Link
-          href="/clubs"
-          className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 font-medium"
-        >
-          View Clubs
-        </Link>
+      <div className="flex justify-center">
         <button
           onClick={logout}
           className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200 font-medium"
