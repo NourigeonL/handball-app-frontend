@@ -2,8 +2,8 @@
 
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import Image from 'next/image';
 import Link from 'next/link';
+import UserClub from './UserClub';
 
 const UserProfile: React.FC = () => {
   const { user, logout } = useAuth();
@@ -13,20 +13,19 @@ const UserProfile: React.FC = () => {
   return (
     <div className="flex flex-col items-center space-y-4 p-6 bg-white rounded-lg shadow-md">
       <div className="flex items-center space-x-4">
-        {user.picture && (
-          <Image
-            src={user.picture}
-            alt={user.name}
-            width={64}
-            height={64}
-            className="rounded-full"
-          />
-        )}
+        <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
+          <span className="text-2xl font-bold text-blue-600">
+            {user.email.charAt(0).toUpperCase()}
+          </span>
+        </div>
         <div className="text-left">
-          <h3 className="text-xl font-semibold text-gray-800">{user.name}</h3>
-          <p className="text-gray-600">{user.email}</p>
+          <h3 className="text-xl font-semibold text-gray-800">{user.email}</h3>
+          <p className="text-gray-600">ID: {user.user_id}</p>
         </div>
       </div>
+      
+      {/* User's Club Information */}
+      <UserClub />
       
       <div className="flex space-x-3">
         <Link

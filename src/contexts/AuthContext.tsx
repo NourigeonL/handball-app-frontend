@@ -6,6 +6,7 @@ import { User, AuthState, LoginResponse } from '@/types/auth';
 interface AuthContextType extends AuthState {
   login: (googleToken: string) => Promise<void>;
   logout: () => void;
+  getAuthToken: () => string | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -31,7 +32,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   useEffect(() => {
     // Check if user is already logged in (e.g., from localStorage)
-    const token = localStorage.getItem('authToken');
+    const token = localStorage.getItem('access');
     const userData = localStorage.getItem('userData');
     
     if (token && userData) {
@@ -44,7 +45,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         });
       } catch (error) {
         console.error('Error parsing stored user data:', error);
-        localStorage.removeItem('authToken');
+        localStorage.removeItem('access');
         localStorage.removeItem('userData');
         setAuthState({
           user: null,
@@ -79,8 +80,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       const data: LoginResponse = await response.json();
       
+      // Try to find the token in different possible fields
+      const token = data.token || data.access_token || data.jwt || data.auth_token;
+      
+      if (!token) {
+        throw new Error('No token found in response');
+      }
+      
       // Store authentication data
-      localStorage.setItem('authToken', data.token);
+      localStorage.setItem('access', token);
       localStorage.setItem('userData', JSON.stringify(data.user));
       
       setAuthState({
@@ -96,7 +104,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const logout = () => {
-    localStorage.removeItem('authToken');
+    localStorage.removeItem('access');
     localStorage.removeItem('userData');
     setAuthState({
       user: null,
@@ -105,10 +113,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     });
   };
 
+  const getAuthToken = () => {
+    return localStorage.getItem('access');
+  };
+
   const value: AuthContextType = {
     ...authState,
     login,
     logout,
+    getAuthToken,
   };
 
   return (

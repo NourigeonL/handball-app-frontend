@@ -1,8 +1,7 @@
 export interface User {
-  id: string;
+  user_id: string;
   email: string;
-  name: string;
-  picture?: string;
+  google_account_id: string;
 }
 
 export interface AuthState {
@@ -13,5 +12,8 @@ export interface AuthState {
 
 export interface LoginResponse {
   user: User;
-  token: string;
+  token?: string;
+  access_token?: string;
+  jwt?: string;
+  auth_token?: string;
 }

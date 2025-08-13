@@ -3,6 +3,7 @@
 import { useAuth } from '@/contexts/AuthContext';
 import GoogleLogin from '@/components/GoogleLogin';
 import UserProfile from '@/components/UserProfile';
+import UserClub from '@/components/UserClub';
 import Link from 'next/link';
 
 export default function Home() {
@@ -22,7 +23,14 @@ export default function Home() {
         {isAuthenticated ? (
           <UserProfile />
         ) : (
-          <GoogleLogin />
+          <>
+            <GoogleLogin />
+            
+            {/* Show clubs info even for non-authenticated users */}
+            <div className="mt-6">
+              <UserClub />
+            </div>
+          </>
         )}
         
         {/* Navigation Links */}
