@@ -51,7 +51,7 @@ const GoogleLogin: React.FC = () => {
     // Check if we have a valid client ID
     const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
     if (!clientId || clientId === 'your-google-client-id') {
-      console.error('Google Client ID not configured. Please set NEXT_PUBLIC_GOOGLE_CLIENT_ID in your .env file');
+      console.error('Google Client ID non configuré. Veuillez définir NEXT_PUBLIC_GOOGLE_CLIENT_ID dans votre fichier .env');
       return;
     }
 
@@ -75,7 +75,7 @@ const GoogleLogin: React.FC = () => {
         });
       }
     } catch (error) {
-      console.error('Error initializing Google Sign-In:', error);
+      console.error('Erreur lors de l\'initialisation de Google Sign-In:', error);
     }
   };
 
@@ -87,9 +87,9 @@ const GoogleLogin: React.FC = () => {
       // Send the token to your backend
       await login(credential);
       
-      console.log('Login successful!');
+      console.log('Connexion réussie !');
     } catch (error) {
-      console.error('Login failed:', error);
+      console.error('Échec de la connexion:', error);
       alert('Échec de la connexion. Veuillez réessayer.');
     }
   };

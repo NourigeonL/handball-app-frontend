@@ -47,18 +47,18 @@ export default function UserClub() {
         if (Array.isArray(data) && data.length > 0) {
           setClubs(data);
         } else {
-          setError('No clubs found');
+          setError('Aucun club trouvé');
         }
       } catch (err) {
         // Handle 404 specifically for my-clubs endpoint
         if (err instanceof Error && err.message.includes('404')) {
-          setError('You are not associated with any club');
+          setError('Vous n\'êtes associé à aucun club');
         } else {
           throw err;
         }
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch club information');
+      setError(err instanceof Error ? err.message : 'Échec de la récupération des informations du club');
     } finally {
       setLoading(false);
     }
@@ -89,7 +89,7 @@ export default function UserClub() {
             </svg>
           </div>
           <div className="ml-3">
-            <h3 className="text-sm font-medium text-yellow-800">Club Information</h3>
+            <h3 className="text-sm font-medium text-yellow-800">Informations du Club</h3>
             <div className="mt-2 text-sm text-yellow-700">
               {error}
             </div>
@@ -106,7 +106,7 @@ export default function UserClub() {
   return (
     <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6 mb-6">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-blue-900">Your Clubs</h3>
+        <h3 className="text-lg font-semibold text-blue-900">Vos Clubs</h3>
         <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
           {clubs.length} club{clubs.length !== 1 ? 's' : ''}
         </span>
@@ -122,21 +122,21 @@ export default function UserClub() {
             <div className="flex items-center justify-between mb-2">
               <h4 className="font-semibold text-blue-900 text-sm flex-1 mr-2">{club.name}</h4>
               <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 flex-shrink-0">
-                Member
+                Membre
               </span>
             </div>
             
             <div className="space-y-2 text-xs">
               {club.registration_number && (
                 <div>
-                  <span className="text-blue-600">Registration:</span>
+                  <span className="text-blue-600">Inscription :</span>
                   <div className="font-medium text-blue-900 truncate">{club.registration_number}</div>
                 </div>
               )}
               
               <div>
-                <span className="text-blue-700">Players:</span>
-                <div className="font-medium text-blue-900">{club.nb_players} player{club.nb_players !== 1 ? 's' : ''}</div>
+                <span className="text-blue-700">Joueurs :</span>
+                <div className="font-medium text-blue-900">{club.nb_players} joueur{club.nb_players !== 1 ? 's' : ''}</div>
               </div>
               
 
@@ -146,7 +146,7 @@ export default function UserClub() {
       </div>
       
       <div className="mt-4 text-center">
-        <p className="text-sm text-blue-600">Click on any club to view details and manage</p>
+        <p className="text-sm text-blue-600">Cliquez sur un club pour voir les détails et gérer</p>
       </div>
     </div>
   );

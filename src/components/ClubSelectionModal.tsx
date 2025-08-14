@@ -38,7 +38,7 @@ const ClubSelectionModal: React.FC<ClubSelectionModalProps> = ({ isOpen, onClose
       <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">Select Your Club</h2>
+            <h2 className="text-2xl font-bold text-gray-900">Sélectionnez Votre Club</h2>
             {userClubs.length === 1 && (
               <button
                 onClick={handleClose}
@@ -53,8 +53,8 @@ const ClubSelectionModal: React.FC<ClubSelectionModalProps> = ({ isOpen, onClose
           
           <p className="text-gray-600 mb-6">
             {userClubs.length > 1 
-              ? "You're a member of multiple clubs. Please select which club you'd like to work with for this session."
-              : "Select your club to continue."
+              ? "Vous êtes membre de plusieurs clubs. Veuillez sélectionner avec quel club vous souhaitez travailler pour cette session."
+              : "Sélectionnez votre club pour continuer."
             }
           </p>
           
@@ -83,8 +83,8 @@ const ClubSelectionModal: React.FC<ClubSelectionModalProps> = ({ isOpen, onClose
           <div className="mt-6 pt-4 border-t border-gray-200">
             <p className="text-sm text-gray-500 text-center">
               {userClubs.length > 1 
-                ? "You can change your selected club at any time from your profile."
-                : "This club will be automatically selected for your session."
+                ? "Vous pouvez changer votre club sélectionné à tout moment depuis votre profil."
+                : "Ce club sera automatiquement sélectionné pour votre session."
               }
             </p>
           </div>
