@@ -4,10 +4,19 @@ export interface User {
   google_account_id: string;
 }
 
+export interface UserClub {
+  club_id: string;
+  name: string;
+  role: 'member' | 'admin' | 'owner';
+}
+
 export interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  selectedClub: UserClub | null;
+  userClubs: UserClub[];
+  isClubSelected: boolean;
 }
 
 export interface LoginResponse {
