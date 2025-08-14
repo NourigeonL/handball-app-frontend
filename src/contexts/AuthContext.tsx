@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, AuthState, LoginResponse, UserClub } from '@/types/auth';
-import { useRouter } from 'next/navigation';
+import { decodeGoogleIdToken, formatGoogleUserDisplay } from '@/utils/googleAuth';
 
 interface AuthContextType extends AuthState {
   login: (googleToken: string) => Promise<void>;
@@ -27,7 +27,6 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const router = useRouter();
   const [authState, setAuthState] = useState<AuthState>({
     user: null,
     isAuthenticated: false,
@@ -97,6 +96,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setAuthState(prev => ({ ...prev, isLoading: true }));
       
+      // Decode Google ID token to extract user profile information
+      const googleProfile = decodeGoogleIdToken(googleToken);
+      console.log('Decoded Google profile:', googleProfile);
+      
       const response = await fetch('http://localhost:8000/auth/frontend', {
         method: 'POST',
         headers: {
@@ -119,9 +122,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         throw new Error('No token found in response');
       }
       
+      // Create enhanced user object with Google profile information
+      const enhancedUser: User = {
+        ...data.user,
+        googleProfile: googleProfile || undefined,
+        // Extract display information for easy access
+        first_name: googleProfile?.given_name || data.user.first_name,
+        last_name: googleProfile?.family_name || data.user.last_name,
+        profile_picture: googleProfile?.picture || data.user.profile_picture,
+      };
+      
+      console.log('Enhanced user object:', enhancedUser);
+      
       // Store authentication data
       localStorage.setItem('access', token);
-      localStorage.setItem('userData', JSON.stringify(data.user));
+      localStorage.setItem('userData', JSON.stringify(enhancedUser));
       
       // Fetch user's clubs from the dedicated endpoint
       console.log('Fetching user clubs from /clubs/my-clubs');
@@ -160,7 +175,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
       
       setAuthState({
-        user: data.user,
+        user: enhancedUser,
         isAuthenticated: true,
         isLoading: false,
         selectedClub,

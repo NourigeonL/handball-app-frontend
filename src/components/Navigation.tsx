@@ -6,11 +6,24 @@ import GoogleLogin from '@/components/GoogleLogin';
 import LogoutModal from '@/components/LogoutModal';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { formatGoogleUserDisplay } from '@/utils/googleAuth';
 
 const Navigation: React.FC = () => {
   const { user, isAuthenticated, logout, selectedClub, userClubs, isClubSelected } = useAuth();
   const pathname = usePathname();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+
+  // Get user display information
+  const userDisplay = user?.googleProfile 
+    ? formatGoogleUserDisplay(user.googleProfile)
+    : {
+        fullName: user?.first_name && user?.last_name 
+          ? `${user.first_name} ${user.last_name}` 
+          : user?.email || '',
+        initials: user?.first_name && user?.last_name 
+          ? `${user.first_name.charAt(0)}${user.last_name.charAt(0)}`.toUpperCase()
+          : user?.email?.charAt(0).toUpperCase() || '?',
+      };
 
   const isActivePage = (path: string) => {
     if (path === '/') {
@@ -92,11 +105,11 @@ const Navigation: React.FC = () => {
                   <div className="flex items-center space-x-2">
                     <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
                       <span className="text-blue-600 font-semibold text-sm">
-                        {user?.email?.charAt(0).toUpperCase()}
+                        {userDisplay.initials}
                       </span>
                     </div>
                     <span className="hidden sm:block text-sm text-gray-700 font-medium">
-                      {user?.email}
+                      {userDisplay.fullName}
                     </span>
                   </div>
                   
