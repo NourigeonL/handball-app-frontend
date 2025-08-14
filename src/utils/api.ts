@@ -1,17 +1,17 @@
 /**
- * Utility functions for making authenticated API calls
+ * Utility functions for making authenticated API calls using session cookies
  */
 
 /**
- * Makes an authenticated GET request with the access token
+ * Makes an authenticated GET request using session cookies
  */
-export const authenticatedGet = async (url: string, token: string) => {
+export const authenticatedGet = async (url: string) => {
   const response = await fetch(url, {
     method: 'GET',
     headers: {
-      'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
+    credentials: 'include', // Include cookies
   });
   
   if (!response.ok) {
@@ -22,16 +22,16 @@ export const authenticatedGet = async (url: string, token: string) => {
 };
 
 /**
- * Makes an authenticated POST request with the access token
+ * Makes an authenticated POST request using session cookies
  */
-export const authenticatedPost = async (url: string, token: string, data?: any) => {
+export const authenticatedPost = async (url: string, data?: any) => {
   const response = await fetch(url, {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
     body: data ? JSON.stringify(data) : undefined,
+    credentials: 'include', // Include cookies
   });
   
   if (!response.ok) {
@@ -42,16 +42,16 @@ export const authenticatedPost = async (url: string, token: string, data?: any) 
 };
 
 /**
- * Makes an authenticated PUT request with the access token
+ * Makes an authenticated PUT request using session cookies
  */
-export const authenticatedPut = async (url: string, token: string, data?: any) => {
+export const authenticatedPut = async (url: string, data?: any) => {
   const response = await fetch(url, {
     method: 'PUT',
     headers: {
-      'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
     body: data ? JSON.stringify(data) : undefined,
+    credentials: 'include', // Include cookies
   });
   
   if (!response.ok) {
@@ -62,15 +62,15 @@ export const authenticatedPut = async (url: string, token: string, data?: any) =
 };
 
 /**
- * Makes an authenticated DELETE request with the access token
+ * Makes an authenticated DELETE request using session cookies
  */
-export const authenticatedDelete = async (url: string, token: string) => {
+export const authenticatedDelete = async (url: string) => {
   const response = await fetch(url, {
     method: 'DELETE',
     headers: {
-      'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
+    credentials: 'include', // Include cookies
   });
   
   if (!response.ok) {
@@ -81,7 +81,7 @@ export const authenticatedDelete = async (url: string, token: string) => {
 };
 
 /**
- * Make an authenticated request that requires both access token and club ID
+ * Make an authenticated request that requires both session authentication and club ID
  * @param endpoint - The API endpoint (without base URL)
  * @param options - Fetch options (method, body, etc.)
  * @returns Promise with the response data
@@ -90,125 +90,77 @@ export async function authenticatedClubRequest<T = any>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
-  // Get access token from localStorage
-  const accessToken = localStorage.getItem('access');
-  if (!accessToken) {
-    throw new Error('Token d\'accès non trouvé. Veuillez vous reconnecter.');
-  }
-
   // Get selected club from localStorage
   const selectedClubData = localStorage.getItem('selectedClub');
   if (!selectedClubData) {
     throw new Error('Aucun club sélectionné. Veuillez sélectionner un club.');
   }
 
-  let selectedClub;
-  try {
-    selectedClub = JSON.parse(selectedClubData);
-  } catch (error) {
-    throw new Error('Données du club invalides. Veuillez sélectionner un club.');
-  }
-
-  if (!selectedClub.club_id) {
-    throw new Error('ID du club manquant. Veuillez sélectionner un club.');
-  }
+  const selectedClub = JSON.parse(selectedClubData);
+  const clubId = selectedClub.id;
 
   // Prepare headers
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
-    'Authorization': `Bearer ${accessToken}`,
-    'X-Club-ID': selectedClub.club_id,
+    'X-Club-ID': clubId.toString(),
     ...options.headers,
   };
 
-  // Prepare request options
-  const requestOptions: RequestInit = {
+  // Make the request
+  const response = await fetch(`http://localhost:8000${endpoint}`, {
     ...options,
     headers,
-  };
+    credentials: 'include', // Include cookies
+  });
 
-  // Make the request
-  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}${endpoint}`, requestOptions);
-
+  // Handle common HTTP status codes with French error messages
   if (!response.ok) {
-    if (response.status === 401) {
-      throw new Error('Token d\'accès expiré. Veuillez vous reconnecter.');
+    switch (response.status) {
+      case 401:
+        throw new Error('Session expirée. Veuillez vous reconnecter.');
+      case 403:
+        throw new Error('Accès refusé. Vous n\'avez pas les permissions nécessaires.');
+      case 404:
+        throw new Error('Ressource non trouvée.');
+      default:
+        throw new Error(`Erreur ${response.status}: ${response.statusText}`);
     }
-    if (response.status === 403) {
-      throw new Error('Accès refusé. Vérifiez vos permissions pour ce club.');
-    }
-    if (response.status === 404) {
-      throw new Error('Ressource non trouvée.');
-    }
-    
-    const errorText = await response.text();
-    throw new Error(`Erreur ${response.status}: ${errorText || 'Erreur inconnue'}`);
   }
 
-  // Try to parse JSON response
-  try {
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    // If response is not JSON, return the text
-    const text = await response.text();
-    return text as T;
-  }
+  return response.json();
 }
 
 /**
- * Make a GET request that requires both access token and club ID
- * @param endpoint - The API endpoint (without base URL)
- * @returns Promise with the response data
+ * Helper function for GET requests requiring club authentication
  */
-export async function authenticatedClubGet<T = any>(endpoint: string): Promise<T> {
+export const authenticatedClubGet = async <T = any>(endpoint: string): Promise<T> => {
   return authenticatedClubRequest<T>(endpoint, { method: 'GET' });
-}
+};
 
 /**
- * Make a POST request that requires both access token and club ID
- * @param endpoint - The API endpoint (without base URL)
- * @param body - Request body
- * @returns Promise with the response data
+ * Helper function for POST requests requiring club authentication
  */
-export async function authenticatedClubPost<T = any>(endpoint: string, body: any): Promise<T> {
-  return authenticatedClubRequest<T>(endpoint, {
-    method: 'POST',
-    body: JSON.stringify(body),
-  });
-}
+export const authenticatedClubPost = async <T = any>(endpoint: string, data?: any): Promise<T> => {
+  return authenticatedClubRequest<T>(endpoint, { method: 'POST', body: JSON.stringify(data) });
+};
 
 /**
- * Make a PUT request that requires both access token and club ID
- * @param endpoint - The API endpoint (without base URL)
- * @param body - Request body
- * @returns Promise with the response data
+ * Helper function for PUT requests requiring club authentication
  */
-export async function authenticatedClubPut<T = any>(endpoint: string, body: any): Promise<T> {
-  return authenticatedClubRequest<T>(endpoint, {
-    method: 'PUT',
-    body: JSON.stringify(body),
-  });
-}
+export const authenticatedClubPut = async <T = any>(endpoint: string, data?: any): Promise<T> => {
+  return authenticatedClubRequest<T>(endpoint, { method: 'PUT', body: JSON.stringify(data) });
+};
 
 /**
- * Make a DELETE request that requires both access token and club ID
- * @param endpoint - The API endpoint (without base URL)
- * @returns Promise with the response data
+ * Helper function for DELETE requests requiring club authentication
  */
-export async function authenticatedClubDelete<T = any>(endpoint: string): Promise<T> {
+export const authenticatedClubDelete = async <T = any>(endpoint: string): Promise<T> => {
   return authenticatedClubRequest<T>(endpoint, { method: 'DELETE' });
-}
+};
 
 /**
- * Make a PATCH request that requires both access token and club ID
- * @param endpoint - The API endpoint (without base URL)
- * @param body - Request body
- * @returns Promise with the response data
+ * Helper function for PATCH requests requiring club authentication
  */
-export async function authenticatedClubPatch<T = any>(endpoint: string, body: any): Promise<T> {
-  return authenticatedClubRequest<T>(endpoint, {
-    method: 'PATCH',
-    body: JSON.stringify(body),
-  });
-}
+export const authenticatedClubPatch = async <T = any>(endpoint: string, data?: any): Promise<T> => {
+  return authenticatedClubRequest<T>(endpoint, { method: 'PATCH', body: JSON.stringify(data) });
+};

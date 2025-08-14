@@ -39,8 +39,5 @@ export interface AuthState {
 
 export interface LoginResponse {
   user: User;
-  token?: string;
-  access_token?: string;
-  jwt?: string;
-  auth_token?: string;
+  // No token fields needed for session-based authentication
 }

@@ -50,13 +50,6 @@ export default function Home() {
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <h2 className="text-2xl font-bold text-gray-900 mb-4">Actions Rapides</h2>
             <div className="flex flex-wrap gap-4">
-              <Link
-                href="/clubs"
-                className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-colors duration-200"
-              >
-                Parcourir Tous les Clubs
-              </Link>
-              
               {userClubs.length > 1 && (
                 <button
                   onClick={() => window.location.reload()}

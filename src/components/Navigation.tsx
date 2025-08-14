@@ -73,12 +73,6 @@ const Navigation: React.FC = () => {
                   Tableau de Bord
                 </Link>
                 <Link 
-                  href="/clubs" 
-                  className={getLinkClasses('/clubs')}
-                >
-                  Tous les Clubs
-                </Link>
-                <Link 
                   href="/profile" 
                   className={getLinkClasses('/profile')}
                 >

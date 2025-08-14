@@ -9,7 +9,7 @@ interface AuthContextType extends AuthState {
   logout: () => void;
   logoutFromClub: () => void;
   selectClub: (club: UserClub) => void;
-  getAuthToken: () => string | null;
+  checkAuthStatus: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -36,17 +36,35 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isClubSelected: false,
   });
 
-  useEffect(() => {
-    // Check if user is already logged in (e.g., from localStorage)
-    const token = localStorage.getItem('access');
-    const userData = localStorage.getItem('userData');
-    const userClubsData = localStorage.getItem('userClubs');
-    const selectedClubData = localStorage.getItem('selectedClub');
-    
-    if (token && userData) {
-      try {
-        const user = JSON.parse(userData);
-        const userClubs = userClubsData ? JSON.parse(userClubsData) : [];
+  // Check authentication status on mount and when needed
+  const checkAuthStatus = async () => {
+    try {
+      setAuthState(prev => ({ ...prev, isLoading: true }));
+      
+      // Check if user is authenticated by calling a protected endpoint
+      const response = await fetch('http://localhost:8000/auth/me', {
+        method: 'GET',
+        credentials: 'include', // Include cookies
+      });
+
+      if (response.ok) {
+        const userData = await response.json();
+        console.log('User is authenticated:', userData);
+        
+        // Fetch user's clubs
+        const clubsResponse = await fetch('http://localhost:8000/clubs/my-clubs', {
+          method: 'GET',
+          credentials: 'include',
+        });
+
+        let userClubs: UserClub[] = [];
+        if (clubsResponse.ok) {
+          const clubsData = await clubsResponse.json();
+          userClubs = clubsData.clubs || clubsData || [];
+        }
+
+        // Check for stored club selection
+        const selectedClubData = localStorage.getItem('selectedClub');
         let selectedClub = selectedClubData ? JSON.parse(selectedClubData) : null;
         let isClubSelected = !!selectedClub;
         
@@ -58,19 +76,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
         
         setAuthState({
-          user,
+          user: userData.user || userData,
           isAuthenticated: true,
           isLoading: false,
           selectedClub,
           userClubs,
           isClubSelected,
         });
-      } catch (error) {
-        console.error('Error parsing stored user data:', error);
-        localStorage.removeItem('access');
-        localStorage.removeItem('userData');
-        localStorage.removeItem('userClubs');
-        localStorage.removeItem('selectedClub');
+      } else {
+        // User is not authenticated
+        console.log('User is not authenticated');
         setAuthState({
           user: null,
           isAuthenticated: false,
@@ -80,7 +95,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           isClubSelected: false,
         });
       }
-    } else {
+    } catch (error) {
+      console.error('Error checking auth status:', error);
       setAuthState({
         user: null,
         isAuthenticated: false,
@@ -90,6 +106,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         isClubSelected: false,
       });
     }
+  };
+
+  useEffect(() => {
+    checkAuthStatus();
   }, []);
 
   const login = async (googleToken: string) => {
@@ -106,6 +126,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ id_token: googleToken }),
+        credentials: 'include', // Include cookies
       });
 
       if (!response.ok) {
@@ -114,13 +135,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       const data: LoginResponse = await response.json();
       console.log('Login response:', data);
-      
-      // Try to find the token in different possible fields
-      const token = data.token || data.access_token || data.jwt || data.auth_token;
-      
-      if (!token) {
-        throw new Error('No token found in response');
-      }
       
       // Create enhanced user object with Google profile information
       const enhancedUser: User = {
@@ -134,18 +148,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       console.log('Enhanced user object:', enhancedUser);
       
-      // Store authentication data
-      localStorage.setItem('access', token);
-      localStorage.setItem('userData', JSON.stringify(enhancedUser));
-      
       // Fetch user's clubs from the dedicated endpoint
       console.log('Fetching user clubs from /clubs/my-clubs');
       const clubsResponse = await fetch('http://localhost:8000/clubs/my-clubs', {
         method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
+        credentials: 'include',
       });
 
       let userClubs: UserClub[] = [];
@@ -156,8 +163,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       } else {
         console.error('Failed to fetch clubs:', clubsResponse.status);
       }
-      
-      localStorage.setItem('userClubs', JSON.stringify(userClubs));
       
       // Auto-select club if user has only one
       let selectedClub = null;
@@ -198,7 +203,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }));
   };
 
-  const logoutFromClub = () => {
+  const logoutFromClub = async () => {
+    try {
+      // Call logout-from-club endpoint to clear club session on backend
+      await fetch('http://localhost:8000/logout-from-club', {
+        method: 'POST',
+        credentials: 'include',
+      });
+    } catch (error) {
+      console.error('Logout from club error:', error);
+    }
+    
+    // Clear local club selection
     localStorage.removeItem('selectedClub');
     setAuthState(prev => ({
       ...prev,
@@ -208,11 +224,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // Stay on the same page, just remove club selection
   };
 
-  const logout = () => {
-    localStorage.removeItem('access');
-    localStorage.removeItem('userData');
-    localStorage.removeItem('userClubs');
+  const logout = async () => {
+    try {
+      // Call logout endpoint to clear session
+      await fetch('http://localhost:8000/auth/logout', {
+        method: 'POST',
+        credentials: 'include',
+      });
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+    
+    // Clear local storage
     localStorage.removeItem('selectedClub');
+    
     setAuthState({
       user: null,
       isAuthenticated: false,
@@ -221,13 +246,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       userClubs: [],
       isClubSelected: false,
     });
-    
-    // Don't redirect - let the ProtectedRoute handle it
-    // This prevents redirect loops since the home page is now protected
-  };
-
-  const getAuthToken = () => {
-    return localStorage.getItem('access');
   };
 
   const value: AuthContextType = {
@@ -236,7 +254,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     logout,
     logoutFromClub,
     selectClub,
-    getAuthToken,
+    checkAuthStatus,
   };
 
   return (

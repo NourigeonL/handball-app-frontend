@@ -8,7 +8,7 @@ import { authenticatedGet } from '@/utils/api';
 
 export default function UserClub() {
   const router = useRouter();
-  const { getAuthToken, isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
   const [clubs, setClubs] = useState<Club[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -20,28 +20,15 @@ export default function UserClub() {
     router.push(`/clubs/${club.club_id}`);
   };
 
-
-
   useEffect(() => {
     const fetchUserClub = async () => {
-    if (!isAuthenticated) {
-      setLoading(false);
-      return;
-    }
-
-    try {
-      // Get token directly from localStorage to avoid closure issues
-      const token = localStorage.getItem('access');
-      
-      if (!token) {
-        throw new Error('No authentication token found');
+      if (!isAuthenticated) {
+        setLoading(false);
+        return;
       }
 
       try {
-        const data = await authenticatedGet(
-          `${process.env.NEXT_PUBLIC_API_URL}/clubs/my-clubs`,
-          token
-        );
+        const data = await authenticatedGet('http://localhost:8000/clubs/my-clubs');
         
         // The endpoint returns an array of clubs the user has access to
         if (Array.isArray(data) && data.length > 0) {
@@ -56,13 +43,10 @@ export default function UserClub() {
         } else {
           throw err;
         }
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Échec de la récupération des informations du club');
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
 
     fetchUserClub();
   }, [isAuthenticated]);
