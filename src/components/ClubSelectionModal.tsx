@@ -21,8 +21,8 @@ const ClubSelectionModal: React.FC<ClubSelectionModalProps> = ({ isOpen, onClose
   const handleClubSelect = (club: UserClub) => {
     selectClub(club);
     onClose();
-    // Redirect to dashboard after club selection to complete the flow
-    router.push('/dashboard');
+    // Redirect to home page (main dashboard) after club selection
+    router.push('/');
   };
 
   // Don't allow closing without selection for users with multiple clubs

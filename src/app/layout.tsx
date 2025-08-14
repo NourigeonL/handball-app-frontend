@@ -16,8 +16,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Handball App",
-  description: "Connect with your handball community and manage your clubs",
+  title: "Gestionnaire de Clubs de Handball",
+  description: "Gérez vos clubs de handball et vos adhésions",
 };
 
 export default function RootLayout({

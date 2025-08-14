@@ -207,8 +207,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       isClubSelected: false,
     });
     
-    // Redirect to home page after logout
-    router.push('/');
+    // Don't redirect - let the ProtectedRoute handle it
+    // This prevents redirect loops since the home page is now protected
   };
 
   const getAuthToken = () => {

@@ -46,41 +46,33 @@ const Navigation: React.FC = () => {
                 <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
                   <span className="text-white font-bold text-sm">H</span>
                 </div>
-                <span className="text-xl font-bold text-gray-900">Handball App</span>
+                <span className="text-xl font-bold text-gray-900">Gestionnaire de Clubs</span>
               </Link>
             </div>
 
-            {/* Navigation Links */}
-            <div className="hidden md:flex items-center space-x-8">
-              <Link 
-                href="/" 
-                className={getLinkClasses('/')}
-              >
-                Home
-              </Link>
-              <Link 
-                href="/clubs" 
-                className={getLinkClasses('/clubs')}
-              >
-                Clubs
-              </Link>
-              {isAuthenticated && (
-                <>
-                  <Link 
-                    href="/dashboard" 
-                    className={getLinkClasses('/dashboard')}
-                  >
-                    Dashboard
-                  </Link>
-                  <Link 
-                    href="/profile" 
-                    className={getLinkClasses('/profile')}
-                  >
-                    Profile
-                  </Link>
-                </>
-              )}
-            </div>
+            {/* Navigation Links - Only show when authenticated */}
+            {isAuthenticated && (
+              <div className="hidden md:flex items-center space-x-8">
+                <Link 
+                  href="/" 
+                  className={getLinkClasses('/')}
+                >
+                  Tableau de Bord
+                </Link>
+                <Link 
+                  href="/clubs" 
+                  className={getLinkClasses('/clubs')}
+                >
+                  Tous les Clubs
+                </Link>
+                <Link 
+                  href="/profile" 
+                  className={getLinkClasses('/profile')}
+                >
+                  Profil
+                </Link>
+              </div>
+            )}
 
             {/* Auth Section */}
             <div className="flex items-center space-x-4">
