@@ -2,6 +2,7 @@ export interface UserClub {
   club_id: string;
   name: string;
   role: 'member' | 'admin' | 'owner';
+  roles: string[]; // Array of roles from backend (e.g., ['OWNER', 'COACH'])
 }
 
 export interface GoogleUserProfile {
@@ -40,4 +41,9 @@ export interface AuthState {
 export interface LoginResponse {
   user: User;
   // No token fields needed for session-based authentication
+}
+
+// New interface for club login response
+export interface ClubLoginResponse {
+  roles: string[]; // e.g., ['OWNER', 'COACH']
 }

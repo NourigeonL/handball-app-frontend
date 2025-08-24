@@ -7,24 +7,34 @@ import UserClub from './UserClub';
 import { formatGoogleUserDisplay } from '@/utils/googleAuth';
 
 const UserProfile: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, isLoading } = useAuth();
+
+  // Show loading state or return null if still loading
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center space-y-4 p-6 bg-white rounded-lg shadow-md">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <p className="text-gray-600">Chargement du profil...</p>
+      </div>
+    );
+  }
 
   if (!user) return null;
 
-  // Format user display information
+  // Format user display information with safe property access
   const displayInfo = user.googleProfile 
     ? formatGoogleUserDisplay(user.googleProfile)
     : {
-        fullName: user.first_name && user.last_name 
+        fullName: (user.first_name && user.last_name) 
           ? `${user.first_name} ${user.last_name}` 
-          : user.email,
+          : user.email || 'Utilisateur',
         firstName: user.first_name || '',
         lastName: user.last_name || '',
-        email: user.email,
+        email: user.email || '',
         picture: user.profile_picture || '',
-        initials: user.first_name && user.last_name 
+        initials: (user.first_name && user.last_name) 
           ? `${user.first_name.charAt(0)}${user.last_name.charAt(0)}`.toUpperCase()
-          : user.email.charAt(0).toUpperCase(),
+          : (user.email ? user.email.charAt(0).toUpperCase() : 'U'),
       };
 
   return (

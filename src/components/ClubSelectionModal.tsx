@@ -11,18 +11,34 @@ interface ClubSelectionModalProps {
 }
 
 const ClubSelectionModal: React.FC<ClubSelectionModalProps> = ({ isOpen, onClose }) => {
-  const { userClubs, selectClub } = useAuth();
+  const { userClubs, selectClub, loginToClub } = useAuth();
   const router = useRouter();
 
   console.log('ClubSelectionModal render:', { isOpen, userClubsLength: userClubs.length });
 
   if (!isOpen) return null;
 
-  const handleClubSelect = (club: UserClub) => {
-    selectClub(club);
-    onClose();
-    // Redirect to home page (main dashboard) after club selection
-    router.push('/');
+  const handleClubSelect = async (club: UserClub) => {
+    try {
+      // Login to the selected club to get roles
+      const roles = await loginToClub(club.club_id);
+      
+      // Update club with roles from backend
+      const clubWithRoles = {
+        ...club,
+        roles: roles
+      };
+      
+      // Select the club with updated roles
+      await selectClub(clubWithRoles);
+      onClose();
+      
+      // Redirect to home page (main dashboard) after club selection
+      router.push('/');
+    } catch (error) {
+      console.error('Error logging into club:', error);
+      // Handle error - maybe show a toast or error message
+    }
   };
 
   // Don't allow closing without selection for users with multiple clubs
@@ -68,7 +84,9 @@ const ClubSelectionModal: React.FC<ClubSelectionModalProps> = ({ isOpen, onClose
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="font-semibold text-gray-900">{club.name}</h3>
-                    <p className="text-sm text-gray-500 capitalize">{club.role}</p>
+                    <p className="text-sm text-gray-500">
+                      {club.roles && club.roles.length > 0 ? club.roles.join(', ') : club.role}
+                    </p>
                   </div>
                   <div className="text-blue-600">
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -20,7 +20,6 @@ export default function ClubMainPage() {
 function ClubContent() {
   const params = useParams();
   const router = useRouter();
-  const { getAuthToken } = useAuth();
   const [club, setClub] = useState<Club | null>(null);
   const [clubInfo, setClubInfo] = useState<ClubInfo | null>(null);
   const [loading, setLoading] = useState(true);
@@ -43,14 +42,8 @@ function ClubContent() {
     // Fetch detailed club information
     const fetchClubInfo = async () => {
       try {
-        const token = getAuthToken();
-        if (!token) {
-          throw new Error('No authentication token found');
-        }
-        
         const data = await authenticatedGet(
-          `${process.env.NEXT_PUBLIC_API_URL}/clubs/${clubId}/info`,
-          token
+          `http://localhost:8000/clubs/${clubId}/info`
         );
         setClubInfo(data);
       } catch (err) {
@@ -61,7 +54,7 @@ function ClubContent() {
     };
 
     fetchClubInfo();
-  }, [params.club_id, getAuthToken]);
+  }, [params.club_id]);
 
   if (loading) {
     return (

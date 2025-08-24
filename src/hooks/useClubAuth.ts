@@ -37,12 +37,23 @@ export const useClubAuth = () => {
 
   // Check if user is admin or owner
   const isClubAdmin = useMemo(() => {
-    return selectedClub?.role === 'admin' || selectedClub?.role === 'owner';
+    return selectedClub?.roles?.includes('OWNER') || selectedClub?.roles?.includes('COACH');
   }, [selectedClub]);
 
   // Check if user is owner
   const isClubOwner = useMemo(() => {
-    return selectedClub?.role === 'owner';
+    return selectedClub?.roles?.includes('OWNER');
+  }, [selectedClub]);
+
+  // Check if user is coach
+  const isClubCoach = useMemo(() => {
+    return selectedClub?.roles?.includes('COACH');
+  }, [selectedClub]);
+
+  // Get all roles as a formatted string
+  const rolesDisplay = useMemo(() => {
+    if (!selectedClub?.roles || selectedClub.roles.length === 0) return 'Membre';
+    return selectedClub.roles.join(', ');
   }, [selectedClub]);
 
   // Authenticated request functions that automatically include club ID
@@ -66,6 +77,8 @@ export const useClubAuth = () => {
     // Permissions
     isClubAdmin,
     isClubOwner,
+    isClubCoach,
+    rolesDisplay,
     
     // API functions
     clubApi,

@@ -3,6 +3,7 @@ export interface Club {
   name: string;
   registration_number: string | null;
   nb_players: number;
+  roles?: string[]; // Array of roles from backend (e.g., ['OWNER', 'COACH'])
 }
 
 export interface ClubInfo extends Club {

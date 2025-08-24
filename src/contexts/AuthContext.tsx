@@ -8,8 +8,9 @@ interface AuthContextType extends AuthState {
   login: (googleToken: string) => Promise<void>;
   logout: () => void;
   logoutFromClub: () => void;
-  selectClub: (club: UserClub) => void;
+  selectClub: (club: UserClub) => Promise<void>;
   checkAuthStatus: () => Promise<void>;
+  loginToClub: (clubId: string) => Promise<string[]>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -41,15 +42,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setAuthState(prev => ({ ...prev, isLoading: true }));
       
-      // Check if user is authenticated by calling a protected endpoint
+      // Check if user is authenticated by calling the session endpoint
       const response = await fetch('http://localhost:8000/auth/me', {
         method: 'GET',
         credentials: 'include', // Include cookies
       });
 
       if (response.ok) {
-        const userData = await response.json();
-        console.log('User is authenticated:', userData);
+        const sessionData = await response.json();
+        console.log('Session data:', sessionData);
+        
+        // Extract user data from session
+        const userData = sessionData.user || sessionData;
         
         // Fetch user's clubs
         const clubsResponse = await fetch('http://localhost:8000/clubs/my-clubs', {
@@ -76,7 +80,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
         
         setAuthState({
-          user: userData.user || userData,
+          user: userData,
           isAuthenticated: true,
           isLoading: false,
           selectedClub,
@@ -194,7 +198,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const selectClub = (club: UserClub) => {
+  const selectClub = async (club: UserClub) => {
     localStorage.setItem('selectedClub', JSON.stringify(club));
     setAuthState(prev => ({
       ...prev,
@@ -248,6 +252,33 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     });
   };
 
+  const loginToClub = async (clubId: string) => {
+    try {
+      const response = await fetch('http://localhost:8000/auth/login-to-club', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ club_id: clubId }),
+        credentials: 'include', // Include cookies (session_id)
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to login to club');
+      }
+
+      const data = await response.json();
+      console.log('Club login response:', data);
+      
+      // Extract roles from the response
+      const roles = data.roles || [];
+      return roles;
+    } catch (error) {
+      console.error('Login to club error:', error);
+      throw error;
+    }
+  };
+
   const value: AuthContextType = {
     ...authState,
     login,
@@ -255,6 +286,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     logoutFromClub,
     selectClub,
     checkAuthStatus,
+    loginToClub,
   };
 
   return (

@@ -8,16 +8,30 @@ import { authenticatedGet } from '@/utils/api';
 
 export default function UserClub() {
   const router = useRouter();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loginToClub } = useAuth();
   const [clubs, setClubs] = useState<Club[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const handleClubClick = (club: Club) => {
-    // Store the selected club in localStorage for the club page
-    localStorage.setItem('selectedClub', JSON.stringify(club));
-    // Redirect to the club main page
-    router.push(`/clubs/${club.club_id}`);
+  const handleClubClick = async (club: Club) => {
+    try {
+      // Login to the selected club to get roles
+      const roles = await loginToClub(club.club_id);
+      
+      // Update club with roles from backend
+      const clubWithRoles = {
+        ...club,
+        roles: roles
+      };
+      
+      // Store the selected club with roles in localStorage for the club page
+      localStorage.setItem('selectedClub', JSON.stringify(clubWithRoles));
+      // Redirect to the club main page
+      router.push(`/clubs/${club.club_id}`);
+    } catch (error) {
+      console.error('Error logging into club:', error);
+      // Handle error - maybe show a toast or error message
+    }
   };
 
   useEffect(() => {
@@ -106,7 +120,7 @@ export default function UserClub() {
             <div className="flex items-center justify-between mb-2">
               <h4 className="font-semibold text-blue-900 text-sm flex-1 mr-2">{club.name}</h4>
               <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 flex-shrink-0">
-                Membre
+                {club.roles && club.roles.length > 0 ? club.roles.join(', ') : 'Membre'}
               </span>
             </div>
             
