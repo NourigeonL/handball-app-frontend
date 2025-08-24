@@ -107,7 +107,7 @@ export async function authenticatedClubRequest<T = any>(
   };
 
   // Make the request
-  const response = await fetch(`http://localhost:8000${endpoint}`, {
+  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}${endpoint}`, {
     ...options,
     headers,
     credentials: 'include', // Include cookies

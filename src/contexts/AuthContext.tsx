@@ -43,7 +43,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setAuthState(prev => ({ ...prev, isLoading: true }));
       
       // Check if user is authenticated by calling the session endpoint
-      const response = await fetch('http://localhost:8000/auth/me', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`, {
         method: 'GET',
         credentials: 'include', // Include cookies
       });
@@ -56,7 +56,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const userData = sessionData.user || sessionData;
         
         // Fetch user's clubs
-        const clubsResponse = await fetch('http://localhost:8000/clubs/my-clubs', {
+        const clubsResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/clubs/my-clubs`, {
           method: 'GET',
           credentials: 'include',
         });
@@ -124,7 +124,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const googleProfile = decodeGoogleIdToken(googleToken);
       console.log('Decoded Google profile:', googleProfile);
       
-      const response = await fetch('http://localhost:8000/auth/frontend', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/frontend`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -154,7 +154,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       // Fetch user's clubs from the dedicated endpoint
       console.log('Fetching user clubs from /clubs/my-clubs');
-      const clubsResponse = await fetch('http://localhost:8000/clubs/my-clubs', {
+      const clubsResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/clubs/my-clubs`, {
         method: 'GET',
         credentials: 'include',
       });
@@ -210,7 +210,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const logoutFromClub = async () => {
     try {
       // Call logout-from-club endpoint to clear club session on backend
-      await fetch('http://localhost:8000/logout-from-club', {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/logout-from-club`, {
         method: 'POST',
         credentials: 'include',
       });
@@ -231,7 +231,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const logout = async () => {
     try {
       // Call logout endpoint to clear session
-      await fetch('http://localhost:8000/auth/logout', {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/logout`, {
         method: 'POST',
         credentials: 'include',
       });
@@ -254,7 +254,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const loginToClub = async (clubId: string) => {
     try {
-      const response = await fetch('http://localhost:8000/auth/login-to-club', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login-to-club`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -43,7 +43,7 @@ function ClubContent() {
     const fetchClubInfo = async () => {
       try {
         const data = await authenticatedGet(
-          `http://localhost:8000/clubs/${clubId}/info`
+          `${process.env.NEXT_PUBLIC_API_URL}/clubs/${clubId}/info`
         );
         setClubInfo(data);
       } catch (err) {

@@ -42,7 +42,7 @@ export default function UserClub() {
       }
 
       try {
-        const data = await authenticatedGet('http://localhost:8000/clubs/my-clubs');
+        const data = await authenticatedGet(`${process.env.NEXT_PUBLIC_API_URL}/clubs/my-clubs`);
         
         // The endpoint returns an array of clubs the user has access to
         if (Array.isArray(data) && data.length > 0) {
