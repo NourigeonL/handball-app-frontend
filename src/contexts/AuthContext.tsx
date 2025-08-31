@@ -77,6 +77,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           selectedClub = userClubs[0];
           isClubSelected = true;
           localStorage.setItem('selectedClub', JSON.stringify(selectedClub));
+          
+          // Redirect to the club page if we're not already there
+          if (typeof window !== 'undefined' && window.location.pathname !== `/clubs/${selectedClub.club_id}`) {
+            window.location.href = `/clubs/${selectedClub.club_id}`;
+          }
         }
         
         setAuthState({
@@ -177,6 +182,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         isClubSelected = true;
         localStorage.setItem('selectedClub', JSON.stringify(selectedClub));
         console.log('Auto-selected single club:', selectedClub);
+        
+        // Redirect to the club page after auto-selection
+        if (typeof window !== 'undefined') {
+          window.location.href = `/clubs/${selectedClub.club_id}`;
+        }
       } else if (userClubs.length > 1) {
         console.log('User has multiple clubs, will show selection modal');
       } else {

@@ -33,8 +33,8 @@ const ClubSelectionModal: React.FC<ClubSelectionModalProps> = ({ isOpen, onClose
       await selectClub(clubWithRoles);
       onClose();
       
-      // Redirect to home page (main dashboard) after club selection
-      router.push('/');
+      // Redirect to the selected club's page after club selection
+      router.push(`/clubs/${club.club_id}`);
     } catch (error) {
       console.error('Error logging into club:', error);
       // Handle error - maybe show a toast or error message

@@ -27,7 +27,8 @@ const Navigation: React.FC = () => {
 
   const isActivePage = (path: string) => {
     if (path === '/') {
-      return pathname === '/';
+      // Consider club page as active when it's the default landing page
+      return pathname === '/' || (isClubSelected && selectedClub && pathname === `/clubs/${selectedClub.club_id}`);
     }
     return pathname.startsWith(path);
   };
@@ -55,7 +56,7 @@ const Navigation: React.FC = () => {
           <div className="flex justify-between items-center h-16">
             {/* Logo/Brand */}
             <div className="flex-shrink-0">
-              <Link href="/" className="flex items-center space-x-2">
+              <Link href={isClubSelected && selectedClub ? `/clubs/${selectedClub.club_id}` : "/"} className="flex items-center space-x-2">
                 <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
                   <span className="text-white font-bold text-sm">H</span>
                 </div>
@@ -67,8 +68,8 @@ const Navigation: React.FC = () => {
             {isAuthenticated && (
               <div className="hidden md:flex items-center space-x-8">
                 <Link 
-                  href="/" 
-                  className={getLinkClasses('/')}
+                  href={isClubSelected && selectedClub ? `/clubs/${selectedClub.club_id}` : "/"} 
+                  className={getLinkClasses(isClubSelected && selectedClub ? `/clubs/${selectedClub.club_id}` : '/')}
                 >
                   Tableau de Bord
                 </Link>

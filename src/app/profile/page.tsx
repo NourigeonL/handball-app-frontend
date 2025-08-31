@@ -3,9 +3,19 @@
 import { useAuth } from '@/contexts/AuthContext';
 import UserProfile from '@/components/UserProfile';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
 export default function ProfilePage() {
-  const { userClubs } = useAuth();
+  const { userClubs, isClubSelected, selectedClub } = useAuth();
+  const router = useRouter();
+
+  // Redirect users with a selected club to their club page (default landing page)
+  useEffect(() => {
+    if (isClubSelected && selectedClub) {
+      router.replace(`/clubs/${selectedClub.club_id}`);
+    }
+  }, [isClubSelected, selectedClub, router]);
 
   return (
     <ProtectedRoute>
@@ -25,6 +35,22 @@ export default function ProfilePage() {
                 className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200"
               >
                 Changer de Club
+              </button>
+            </div>
+          )}
+          
+          {/* Return to Club Button */}
+          {isClubSelected && selectedClub && (
+            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+              <h2 className="text-lg font-semibold text-green-900 mb-2">Retour au Club</h2>
+              <p className="text-green-800 mb-3">
+                Retournez à votre club sélectionné pour continuer à travailler.
+              </p>
+              <button
+                onClick={() => router.push(`/clubs/${selectedClub.club_id}`)}
+                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200"
+              >
+                Retour au Club
               </button>
             </div>
           )}
