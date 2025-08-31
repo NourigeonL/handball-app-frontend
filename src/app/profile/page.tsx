@@ -4,18 +4,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import UserProfile from '@/components/UserProfile';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
 
 export default function ProfilePage() {
   const { userClubs, isClubSelected, selectedClub } = useAuth();
   const router = useRouter();
-
-  // Redirect users with a selected club to their club page (default landing page)
-  useEffect(() => {
-    if (isClubSelected && selectedClub) {
-      router.replace(`/clubs/${selectedClub.club_id}`);
-    }
-  }, [isClubSelected, selectedClub, router]);
 
   return (
     <ProtectedRoute>

@@ -91,29 +91,29 @@ function ClubContent() {
   // Wait for auth context to finish loading
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="animate-spin rounded-full h-8 w-8 sm:h-12 sm:w-12 border-b-2 border-blue-600"></div>
       </div>
     );
   }
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="animate-spin rounded-full h-8 w-8 sm:h-12 sm:w-12 border-b-2 border-blue-600"></div>
       </div>
     );
   }
 
   if (!isClubSelected && !localStorage.getItem('selectedClub')) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-gray-600 text-lg mb-4">Aucun club sélectionné</div>
-          <p className="text-gray-500 mb-6">Veuillez sélectionner un club depuis le tableau de bord</p>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="text-center max-w-sm mx-auto">
+          <div className="text-gray-600 text-base sm:text-lg mb-4">Aucun club sélectionné</div>
+          <p className="text-gray-500 mb-6 text-sm sm:text-base">Veuillez sélectionner un club depuis le tableau de bord</p>
           <Link 
             href="/" 
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm sm:text-base"
           >
             Retour au Tableau de Bord
           </Link>
@@ -124,13 +124,13 @@ function ClubContent() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-red-600 text-lg font-semibold mb-2">Erreur</div>
-          <div className="text-gray-600 mb-4">{error}</div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="text-center max-w-sm mx-auto">
+          <div className="text-red-600 text-base sm:text-lg font-semibold mb-2">Erreur</div>
+          <div className="text-gray-600 mb-4 text-sm sm:text-base">{error}</div>
           <Link 
             href="/" 
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm sm:text-base"
           >
             Retour au Tableau de Bord
           </Link>
@@ -141,12 +141,12 @@ function ClubContent() {
 
   if (!club) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-gray-600 text-lg mb-4">Club non trouvé</div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="text-center max-w-sm mx-auto">
+          <div className="text-gray-600 text-base sm:text-lg mb-4">Club non trouvé</div>
           <Link 
             href="/" 
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm sm:text-base"
           >
             Retour au Tableau de Bord
           </Link>
@@ -156,88 +156,83 @@ function ClubContent() {
   }
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-6 lg:p-8">
         <div className="max-w-7xl mx-auto">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">{club.name}</h1>
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
-              Membre
-            </span>
+          <div className="mb-6 sm:mb-8">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2 text-center sm:text-left">{club.name}</h1>
+            <div className="text-center sm:text-left">
+              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                Membre
+              </span>
+            </div>
           </div>
         
-        <div className="grid gap-8 lg:grid-cols-3">
+        <div className="grid gap-4 sm:gap-6 lg:gap-8 lg:grid-cols-3">
           {/* Club Overview */}
           <div className="lg:col-span-2">
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">Aperçu du Club</h2>
+            <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4">Aperçu du Club</h2>
               
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">Nom du Club :</span>
-                  <span className="font-semibold text-gray-900">{club.name}</span>
+              <div className="space-y-3 sm:space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-1 sm:space-y-0">
+                  <span className="text-gray-600 text-sm sm:text-base">Nom du Club :</span>
+                  <span className="font-semibold text-gray-900 text-sm sm:text-base">{club.name}</span>
                 </div>
                 
                 {club.registration_number && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-600">Numéro d'Inscription :</span>
-                    <span className="font-semibold text-gray-900">{club.registration_number}</span>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-1 sm:space-y-0">
+                    <span className="text-gray-600 text-sm sm:text-base">Numéro d'Inscription :</span>
+                    <span className="font-semibold text-gray-900 text-sm sm:text-base">{club.registration_number}</span>
                   </div>
                 )}
                 
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">Total des Joueurs :</span>
-                  <span className="font-semibold text-gray-900">{club.nb_players} joueur{club.nb_players !== 1 ? 's' : ''}</span>
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">ID du Club :</span>
-                  <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">
-                    {club.club_id}
-                  </span>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-1 sm:space-y-0">
+                  <span className="text-gray-600 text-sm sm:text-base">Total des Joueurs :</span>
+                  <span className="font-semibold text-gray-900 text-sm sm:text-base">{club.nb_players} joueur{club.nb_players !== 1 ? 's' : ''}</span>
                 </div>
               </div>
 
               {/* Extended Club Information */}
               {clubInfo && (
-                <div className="mt-6 pt-6 border-t border-gray-200">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Informations Supplémentaires</h3>
+                <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-gray-200">
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Informations Supplémentaires</h3>
                   
                   {clubInfo.description && (
-                    <div className="mb-4">
-                      <span className="text-gray-600">Description :</span>
-                      <p className="text-gray-900 mt-1">{clubInfo.description}</p>
+                    <div className="mb-3 sm:mb-4">
+                      <span className="text-gray-600 text-sm sm:text-base">Description :</span>
+                      <p className="text-gray-900 mt-1 text-sm sm:text-base">{clubInfo.description}</p>
                     </div>
                   )}
                   
                   {clubInfo.address && (
-                    <div className="mb-4">
-                      <span className="text-gray-600">Adresse :</span>
-                      <p className="text-gray-900 mt-1">{clubInfo.address}</p>
+                    <div className="mb-3 sm:mb-4">
+                      <span className="text-gray-600 text-sm sm:text-base">Adresse :</span>
+                      <p className="text-gray-900 mt-1 text-sm sm:text-base">{clubInfo.address}</p>
                     </div>
                   )}
                   
                   {clubInfo.phone && (
-                    <div className="mb-4">
-                      <span className="text-gray-600">Téléphone :</span>
-                      <p className="text-gray-900 mt-1">{clubInfo.phone}</p>
+                    <div className="mb-3 sm:mb-4">
+                      <span className="text-gray-600 text-sm sm:text-base">Téléphone :</span>
+                      <p className="text-gray-900 mt-1 text-sm sm:text-base">{clubInfo.phone}</p>
                     </div>
                   )}
                   
                   {clubInfo.email && (
-                    <div className="mb-4">
-                      <span className="text-gray-600">Email :</span>
-                      <p className="text-gray-900 mt-1">{clubInfo.email}</p>
+                    <div className="mb-3 sm:mb-4">
+                      <span className="text-gray-600 text-sm sm:text-base">Email :</span>
+                      <p className="text-gray-900 mt-1 text-sm sm:text-base">{clubInfo.email}</p>
                     </div>
                   )}
                   
                   {clubInfo.website && (
-                    <div className="mb-4">
-                      <span className="text-gray-600">Site Web :</span>
+                    <div className="mb-3 sm:mb-4">
+                      <span className="text-gray-600 text-sm sm:text-base">Site Web :</span>
                       <a 
                         href={clubInfo.website} 
                         target="_blank" 
                         rel="noopener noreferrer"
-                        className="text-blue-600 hover:text-blue-800 mt-1 block"
+                        className="text-blue-600 hover:text-blue-800 mt-1 block text-sm sm:text-base break-all"
                       >
                         {clubInfo.website}
                       </a>
@@ -245,36 +240,13 @@ function ClubContent() {
                   )}
                   
                   {clubInfo.founded_year && (
-                    <div className="mb-4">
-                      <span className="text-gray-600">Fondé en :</span>
-                      <span className="text-gray-900 mt-1 ml-2">{clubInfo.founded_year}</span>
+                    <div className="mb-3 sm:mb-4">
+                      <span className="text-gray-600 text-sm sm:text-base">Fondé en :</span>
+                      <span className="text-gray-900 mt-1 ml-0 sm:ml-2 text-sm sm:text-base">{clubInfo.founded_year}</span>
                     </div>
                   )}
                 </div>
               )}
-            </div>
-          </div>
-
-          {/* Sidebar */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Actions Rapides</h3>
-              
-                             <div className="space-y-3">
-                   <div className="text-center p-4 bg-green-50 rounded-lg">
-                     <p className="text-green-800 text-sm mb-2">Vous êtes membre de ce club</p>
-                     <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
-                       Membre Actif
-                     </span>
-                   </div>
-                 
-                 <Link 
-                   href="/" 
-                   className="block w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-center"
-                 >
-                   Accueil
-                 </Link>
-               </div>
             </div>
           </div>
         </div>
