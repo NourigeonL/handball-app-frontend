@@ -141,12 +141,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               // The user will need to manually log into the club later
             }
             
-            // Redirect to the club page if we're not already there
-            if (typeof window !== 'undefined' && window.location.pathname !== `/clubs/${selectedClub.club_id}`) {
-              console.log('Redirecting to club page:', `/clubs/${selectedClub.club_id}`);
-              window.location.href = `/clubs/${selectedClub.club_id}`;
-            }
-          }
+          // Don't redirect here - let the home page handle the redirect
+          // This prevents conflicts when the user is already on the main page
+          console.log('Club auto-selected, home page will handle redirect');
+        }
           
           // If we have a selected club (from session or localStorage), ensure we're logged into it
           if (selectedClub && !selectedClub.roles) {
@@ -281,11 +279,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           // The user will need to manually log into the club later
         }
         
-        // Redirect to the club page after auto-selection
-        if (typeof window !== 'undefined') {
-          console.log('Redirecting to club page after login:', `/clubs/${selectedClub.club_id}`);
-          window.location.href = `/clubs/${selectedClub.club_id}`;
-        }
+        // Don't redirect here - let the home page handle the redirect
+        // This ensures consistent redirect behavior
+        console.log('Club auto-selected after login, home page will handle redirect');
       } else if (userClubs.length > 1) {
         console.log('User has multiple clubs, will show selection modal');
       } else {
