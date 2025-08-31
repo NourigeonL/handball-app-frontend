@@ -45,6 +45,14 @@ export interface CollectivePlayer {
   license_type: string;
 }
 
+export interface PaginatedPlayersResponse {
+  total_count: number;
+  total_page: number;
+  count: number;
+  page: number;
+  results: Player[];
+}
+
 export interface ClubsResponse {
   clubs: Club[];
 }

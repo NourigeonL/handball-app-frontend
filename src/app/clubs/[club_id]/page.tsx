@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { Club, ClubInfo, Collective, Player } from '@/types/clubs';
+import { Club, ClubInfo, Collective, Player, PaginatedPlayersResponse } from '@/types/clubs';
 import { authenticatedGet } from '@/utils/api';
 import Link from 'next/link';
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -25,6 +25,14 @@ function ClubContent() {
   const [clubInfo, setClubInfo] = useState<ClubInfo | null>(null);
   const [collectives, setCollectives] = useState<Collective[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
+  const [pagination, setPagination] = useState({
+    total_count: 0,
+    total_page: 0,
+    count: 0,
+    page: 0
+  });
+  const [currentPage, setCurrentPage] = useState(0);
+  const [perPage] = useState(10);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -99,9 +107,15 @@ function ClubContent() {
         const fetchPlayers = async () => {
           try {
             const data = await authenticatedGet(
-              `${process.env.NEXT_PUBLIC_API_URL}/players`
-            );
-            setPlayers(data);
+              `${process.env.NEXT_PUBLIC_API_URL}/players?page=0&per_page=${perPage}`
+            ) as PaginatedPlayersResponse;
+            setPlayers(data.results);
+            setPagination({
+              total_count: data.total_count,
+              total_page: data.total_page,
+              count: data.count,
+              page: data.page
+            });
           } catch (err) {
             console.error('Error fetching players:', err);
             // Don't set error for players, just log it
@@ -119,6 +133,33 @@ function ClubContent() {
       setLoading(false);
     }
   }, [params.club_id, isClubSelected]);
+
+  // Function to fetch players
+  const fetchPlayers = async (page: number = 0) => {
+    try {
+      const data = await authenticatedGet(
+        `${process.env.NEXT_PUBLIC_API_URL}/players?page=${page}&per_page=${perPage}`
+      ) as PaginatedPlayersResponse;
+      setPlayers(data.results);
+      setPagination({
+        total_count: data.total_count,
+        total_page: data.total_page,
+        count: data.count,
+        page: data.page
+      });
+    } catch (err) {
+      console.error('Error fetching players:', err);
+      // Don't set error for players, just log it
+    }
+  };
+
+  // Function to change page
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 0 && newPage < pagination.total_page) {
+      setCurrentPage(newPage);
+      fetchPlayers(newPage);
+    }
+  };
 
   // Wait for auth context to finish loading
   if (authLoading) {
@@ -391,6 +432,62 @@ function ClubContent() {
                       ))}
                     </tbody>
                   </table>
+                  
+                  {/* Pagination Controls */}
+                  {pagination.total_page > 1 && (
+                    <div className="mt-6 flex items-center justify-between">
+                      <div className="text-sm text-gray-700">
+                        Affichage de <span className="font-medium">{pagination.count}</span> sur{' '}
+                        <span className="font-medium">{pagination.total_count}</span> joueurs
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() => handlePageChange(currentPage - 1)}
+                          disabled={currentPage === 0}
+                          className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Précédent
+                        </button>
+                        
+                        <div className="flex items-center space-x-1">
+                          {Array.from({ length: Math.min(5, pagination.total_page) }, (_, i) => {
+                            let pageNum;
+                            if (pagination.total_page <= 5) {
+                              pageNum = i;
+                            } else if (currentPage < 3) {
+                              pageNum = i;
+                            } else if (currentPage >= pagination.total_page - 3) {
+                              pageNum = pagination.total_page - 5 + i;
+                            } else {
+                              pageNum = currentPage - 2 + i;
+                            }
+                            
+                            return (
+                              <button
+                                key={pageNum}
+                                onClick={() => handlePageChange(pageNum)}
+                                className={`px-3 py-2 text-sm font-medium rounded-md ${
+                                  currentPage === pageNum
+                                    ? 'bg-blue-600 text-white'
+                                    : 'text-gray-500 bg-white border border-gray-300 hover:bg-gray-50'
+                                }`}
+                              >
+                                {pageNum + 1}
+                              </button>
+                            );
+                          })}
+                        </div>
+                        
+                        <button
+                          onClick={() => handlePageChange(currentPage + 1)}
+                          disabled={currentPage >= pagination.total_page - 1}
+                          className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Suivant
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="text-center py-6">
