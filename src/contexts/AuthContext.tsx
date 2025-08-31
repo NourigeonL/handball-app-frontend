@@ -74,15 +74,36 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         
         // Auto-select club if user has only one and none is selected
         if (!selectedClub && userClubs.length === 1) {
+          console.log('Auto-selecting single club:', userClubs[0]);
           selectedClub = userClubs[0];
           isClubSelected = true;
           localStorage.setItem('selectedClub', JSON.stringify(selectedClub));
           
+          // Auto-login to the club to establish session
+          try {
+            const roles = await loginToClub(selectedClub.club_id);
+            // Update club with roles
+            selectedClub = { ...selectedClub, roles };
+            localStorage.setItem('selectedClub', JSON.stringify(selectedClub));
+            console.log('Successfully auto-logged into club with roles:', roles);
+          } catch (error) {
+            console.error('Failed to auto-login to club:', error);
+            // Still proceed with club selection, but log the error
+            // The user will need to manually log into the club later
+          }
+          
           // Redirect to the club page if we're not already there
           if (typeof window !== 'undefined' && window.location.pathname !== `/clubs/${selectedClub.club_id}`) {
+            console.log('Redirecting to club page:', `/clubs/${selectedClub.club_id}`);
             window.location.href = `/clubs/${selectedClub.club_id}`;
           }
         }
+        
+        console.log('Setting auth state after auto-selection:', {
+          selectedClub,
+          isClubSelected,
+          userClubsLength: userClubs.length
+        });
         
         setAuthState({
           user: userData,
@@ -183,8 +204,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         localStorage.setItem('selectedClub', JSON.stringify(selectedClub));
         console.log('Auto-selected single club:', selectedClub);
         
+        // Auto-login to the club to establish session
+        try {
+          const roles = await loginToClub(selectedClub.club_id);
+          // Update club with roles
+          selectedClub = { ...selectedClub, roles };
+          localStorage.setItem('selectedClub', JSON.stringify(selectedClub));
+          console.log('Auto-logged into club with roles:', roles);
+        } catch (error) {
+          console.error('Failed to auto-login to club:', error);
+          // Still proceed with club selection, but log the error
+          // The user will need to manually log into the club later
+        }
+        
         // Redirect to the club page after auto-selection
         if (typeof window !== 'undefined') {
+          console.log('Redirecting to club page after login:', `/clubs/${selectedClub.club_id}`);
           window.location.href = `/clubs/${selectedClub.club_id}`;
         }
       } else if (userClubs.length > 1) {
@@ -192,6 +227,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       } else {
         console.log('No clubs found for user');
       }
+      
+      console.log('Setting auth state after login auto-selection:', {
+        selectedClub,
+        isClubSelected,
+        userClubsLength: userClubs.length
+      });
       
       setAuthState({
         user: enhancedUser,

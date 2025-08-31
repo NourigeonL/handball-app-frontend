@@ -33,9 +33,12 @@ function ClubContent() {
       authLoading 
     });
     
-    // Only proceed if a club is selected
-    if (!isClubSelected) {
-      console.log('No club selected, setting loading to false');
+    // Check if we have a stored club in localStorage (for auto-selection cases)
+    const hasStoredClub = !!localStorage.getItem('selectedClub');
+    
+    // Only proceed if a club is selected OR if we have a stored club
+    if (!isClubSelected && !hasStoredClub) {
+      console.log('No club selected and no stored club, setting loading to false');
       setLoading(false);
       return;
     }
@@ -102,7 +105,7 @@ function ClubContent() {
     );
   }
 
-  if (!isClubSelected) {
+  if (!isClubSelected && !localStorage.getItem('selectedClub')) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
