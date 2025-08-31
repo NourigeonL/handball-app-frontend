@@ -210,7 +210,7 @@ function CollectiveContent() {
 
         {/* Collective Header */}
         <div className="mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2 text-center sm:text-left">{collective.name}</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2 text-center sm:text-left">Collectif : {collective.name}</h1>
           {collective.description && (
             <div className="text-center sm:text-left">
               <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
