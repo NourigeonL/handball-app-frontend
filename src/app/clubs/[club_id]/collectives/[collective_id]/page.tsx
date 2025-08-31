@@ -8,6 +8,7 @@ import { authenticatedGet } from '@/utils/api';
 import Link from 'next/link';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import Pagination from '@/components/Pagination';
+import AddPlayerToCollective from '@/components/AddPlayerToCollective';
 
 export default function CollectivePage() {
   return (
@@ -289,78 +290,101 @@ function CollectiveContent() {
             </div>
           </div>
 
-          {/* Players Section */}
+          {/* Add Player Section */}
           <div className="lg:col-span-2">
-            <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6">
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4">Joueurs du Collectif</h2>
-              
-              {players.length > 0 ? (
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Nom
-                        </th>
-                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Genre
-                        </th>
-                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Date de naissance
-                        </th>
-                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Licence
-                        </th>
-                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Type
-                        </th>
+            <AddPlayerToCollective 
+              collectiveId={params.collective_id as string}
+              onPlayerAdded={() => {
+                // Refresh the collective data and players list
+                fetchCollectivePlayers(currentPage);
+                // Also refresh collective info to update player count
+                const fetchCollective = async () => {
+                  try {
+                    const data = await authenticatedGet(
+                      `${process.env.NEXT_PUBLIC_API_URL}/collectives/${params.collective_id}`
+                    );
+                    setCollective(data);
+                  } catch (err) {
+                    console.error('Error refreshing collective data:', err);
+                  }
+                };
+                fetchCollective();
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Players Section */}
+        <div className="mt-6 sm:mt-8">
+          <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4">Joueurs du Collectif</h2>
+            
+            {players.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Nom
+                      </th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Genre
+                      </th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Date de naissance
+                      </th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Licence
+                      </th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Type
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {players.map((player) => (
+                      <tr key={player.player_id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-3 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {player.first_name} {player.last_name}
+                        </td>
+                        <td className="px-3 py-4 whitespace-nowrap">
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                            player.gender === 'M' 
+                              ? 'bg-blue-100 text-blue-800' 
+                              : 'bg-pink-100 text-pink-800'
+                          }`}>
+                            {player.gender === 'M' ? 'Homme' : 'Femme'}
+                          </span>
+                        </td>
+                        <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {new Date(player.date_of_birth).toLocaleDateString('fr-FR')}
+                        </td>
+                        <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {player.license_number}
+                        </td>
+                        <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {player.license_type}
+                        </td>
                       </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {players.map((player) => (
-                        <tr key={player.player_id} className="hover:bg-gray-50 transition-colors">
-                          <td className="px-3 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            {player.first_name} {player.last_name}
-                          </td>
-                          <td className="px-3 py-4 whitespace-nowrap">
-                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                              player.gender === 'M' 
-                                ? 'bg-blue-100 text-blue-800' 
-                                : 'bg-pink-100 text-pink-800'
-                            }`}>
-                              {player.gender === 'M' ? 'Homme' : 'Femme'}
-                            </span>
-                          </td>
-                          <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {new Date(player.date_of_birth).toLocaleDateString('fr-FR')}
-                          </td>
-                          <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {player.license_number}
-                          </td>
-                          <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {player.license_type}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  
-                  {/* Pagination Controls */}
-                  <Pagination
-                    currentPage={currentPage}
-                    totalPages={pagination.total_page}
-                    totalCount={pagination.total_count}
-                    currentCount={pagination.count}
-                    onPageChange={handlePageChange}
-                  />
-                </div>
-              ) : (
-                <div className="text-center py-6">
-                  <div className="text-gray-400 text-sm sm:text-base">Aucun joueur dans ce collectif</div>
-                  <p className="text-gray-300 text-xs sm:text-sm mt-1">Les joueurs apparaîtront ici</p>
-                </div>
-              )}
-            </div>
+                    ))}
+                  </tbody>
+                </table>
+                
+                {/* Pagination Controls */}
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={pagination.total_page}
+                  totalCount={pagination.total_count}
+                  currentCount={pagination.count}
+                  onPageChange={handlePageChange}
+                />
+              </div>
+            ) : (
+              <div className="text-center py-6">
+                <div className="text-gray-400 text-sm sm:text-base">Aucun joueur dans ce collectif</div>
+                <p className="text-gray-300 text-xs sm:text-sm mt-1">Les joueurs apparaîtront ici</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
