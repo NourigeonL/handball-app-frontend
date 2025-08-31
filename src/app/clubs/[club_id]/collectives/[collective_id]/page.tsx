@@ -4,11 +4,12 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Collective, CollectivePlayer, PaginatedPlayersResponse } from '@/types/clubs';
-import { authenticatedGet } from '@/utils/api';
+import { authenticatedGet, authenticatedPost } from '@/utils/api';
 import Link from 'next/link';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import Pagination from '@/components/Pagination';
 import AddPlayerToCollective from '@/components/AddPlayerToCollective';
+import RemovePlayerModal from '@/components/RemovePlayerModal';
 import { useWebSocket } from '@/contexts/WebSocketContext';
 
 export default function CollectivePage() {
@@ -35,6 +36,11 @@ function CollectiveContent() {
   });
   const [currentPage, setCurrentPage] = useState(0);
   const perPage = 10; // Default per page
+  
+  // Remove player modal state
+  const [isRemoveModalOpen, setIsRemoveModalOpen] = useState(false);
+  const [playerToRemove, setPlayerToRemove] = useState<CollectivePlayer | null>(null);
+  const [isRemovingPlayer, setIsRemovingPlayer] = useState(false);
 
   useEffect(() => {
     console.log('CollectiveContent useEffect:', { 
@@ -193,6 +199,57 @@ function CollectiveContent() {
       setCurrentPage(newPage);
       fetchCollectivePlayers(newPage);
     }
+  };
+
+  // Function to open remove player modal
+  const handleRemovePlayer = (player: CollectivePlayer) => {
+    setPlayerToRemove(player);
+    setIsRemoveModalOpen(true);
+  };
+
+  // Function to confirm player removal
+  const handleConfirmRemovePlayer = async () => {
+    if (!playerToRemove) return;
+
+    setIsRemovingPlayer(true);
+    try {
+      await authenticatedPost(
+        `${process.env.NEXT_PUBLIC_API_URL}/collectives/${params.collective_id}/remove-player`,
+        { player_id: playerToRemove.player_id }
+      );
+
+      // Close modal and reset state
+      setIsRemoveModalOpen(false);
+      setPlayerToRemove(null);
+      
+      // Refresh the collective data and players list
+      fetchCollectivePlayers(currentPage);
+      
+      // Also refresh collective info to update player count
+      const fetchCollective = async () => {
+        try {
+          const data = await authenticatedGet(
+            `${process.env.NEXT_PUBLIC_API_URL}/collectives/${params.collective_id}`
+          );
+          setCollective(data);
+        } catch (err) {
+          console.error('Error refreshing collective data:', err);
+        }
+      };
+      fetchCollective();
+      
+    } catch (err) {
+      console.error('Error removing player:', err);
+      // You could add a toast notification here for better UX
+    } finally {
+      setIsRemovingPlayer(false);
+    }
+  };
+
+  // Function to close remove player modal
+  const handleCloseRemoveModal = () => {
+    setIsRemoveModalOpen(false);
+    setPlayerToRemove(null);
   };
 
   // Wait for auth context to finish loading
@@ -390,6 +447,9 @@ function CollectiveContent() {
                       <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Type
                       </th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
@@ -416,6 +476,18 @@ function CollectiveContent() {
                         <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
                           {player.license_type}
                         </td>
+                        <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
+                          <button
+                            onClick={() => handleRemovePlayer(player)}
+                            className="inline-flex items-center px-3 py-1.5 border border-red-300 text-xs font-medium rounded-md text-red-700 bg-white hover:bg-red-50 hover:border-red-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
+                            title="Retirer le joueur du collectif"
+                          >
+                            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                            Retirer
+                          </button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -439,6 +511,16 @@ function CollectiveContent() {
           </div>
         </div>
       </div>
+      
+      {/* Remove Player Modal */}
+      <RemovePlayerModal
+        isOpen={isRemoveModalOpen}
+        onClose={handleCloseRemoveModal}
+        onConfirm={handleConfirmRemovePlayer}
+        playerName={playerToRemove ? `${playerToRemove.first_name} ${playerToRemove.last_name}` : ''}
+        collectiveName={collective?.name || ''}
+        isLoading={isRemovingPlayer}
+      />
     </div>
   );
 }
