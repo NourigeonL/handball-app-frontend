@@ -7,6 +7,7 @@ import { Collective, CollectivePlayer, PaginatedPlayersResponse } from '@/types/
 import { authenticatedGet } from '@/utils/api';
 import Link from 'next/link';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import Pagination from '@/components/Pagination';
 
 export default function CollectivePage() {
   return (
@@ -345,60 +346,13 @@ function CollectiveContent() {
                   </table>
                   
                   {/* Pagination Controls */}
-                  {pagination.total_page > 1 && (
-                    <div className="mt-6 flex items-center justify-between">
-                      <div className="text-sm text-gray-700">
-                        Affichage de <span className="font-medium">{pagination.count}</span> sur{' '}
-                        <span className="font-medium">{pagination.total_count}</span> joueurs
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <button
-                          onClick={() => handlePageChange(currentPage - 1)}
-                          disabled={currentPage === 0}
-                          className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          Précédent
-                        </button>
-                        
-                        <div className="flex items-center space-x-1">
-                          {Array.from({ length: Math.min(5, pagination.total_page) }, (_, i) => {
-                            let pageNum;
-                            if (pagination.total_page <= 5) {
-                              pageNum = i;
-                            } else if (currentPage < 3) {
-                              pageNum = i;
-                            } else if (currentPage >= pagination.total_page - 3) {
-                              pageNum = pagination.total_page - 5 + i;
-                            } else {
-                              pageNum = currentPage - 2 + i;
-                            }
-                            
-                            return (
-                              <button
-                                key={pageNum}
-                                onClick={() => handlePageChange(pageNum)}
-                                className={`px-3 py-2 text-sm font-medium rounded-md ${
-                                  currentPage === pageNum
-                                    ? 'bg-blue-600 text-white'
-                                    : 'text-gray-500 bg-white border border-gray-300 hover:bg-gray-50'
-                                }`}
-                              >
-                                {pageNum + 1}
-                              </button>
-                            );
-                          })}
-                        </div>
-                        
-                        <button
-                          onClick={() => handlePageChange(currentPage + 1)}
-                          disabled={currentPage >= pagination.total_page - 1}
-                          className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          Suivant
-                        </button>
-                      </div>
-                    </div>
-                  )}
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={pagination.total_page}
+                    totalCount={pagination.total_count}
+                    currentCount={pagination.count}
+                    onPageChange={handlePageChange}
+                  />
                 </div>
               ) : (
                 <div className="text-center py-6">
