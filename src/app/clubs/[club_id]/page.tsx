@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { Club, ClubInfo, Collective } from '@/types/clubs';
+import { Club, ClubInfo, Collective, Player } from '@/types/clubs';
 import { authenticatedGet } from '@/utils/api';
 import Link from 'next/link';
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -24,6 +24,7 @@ function ClubContent() {
   const [club, setClub] = useState<Club | null>(null);
   const [clubInfo, setClubInfo] = useState<ClubInfo | null>(null);
   const [collectives, setCollectives] = useState<Collective[]>([]);
+  const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -93,6 +94,21 @@ function ClubContent() {
         };
         
         fetchCollectives();
+        
+        // Fetch players
+        const fetchPlayers = async () => {
+          try {
+            const data = await authenticatedGet(
+              `${process.env.NEXT_PUBLIC_API_URL}/players`
+            );
+            setPlayers(data);
+          } catch (err) {
+            console.error('Error fetching players:', err);
+            // Don't set error for players, just log it
+          }
+        };
+        
+        fetchPlayers();
       } catch (error) {
         console.error('Error parsing stored club data:', error);
         setError('Erreur lors de la récupération des données du club');
@@ -291,6 +307,90 @@ function ClubContent() {
                 <div className="text-center py-6">
                   <div className="text-gray-400 text-sm sm:text-base">Aucune équipe trouvée</div>
                   <p className="text-gray-300 text-xs sm:text-sm mt-1">Les équipes apparaîtront ici</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Players Section */}
+          <div className="lg:col-span-3 mt-6">
+            <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4">Joueurs</h2>
+              
+              {players.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Nom
+                        </th>
+                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Genre
+                        </th>
+                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Date de naissance
+                        </th>
+                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Licence
+                        </th>
+                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Type
+                        </th>
+                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Collectifs
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {players.map((player) => (
+                        <tr key={player.player_id} className="hover:bg-gray-50 transition-colors">
+                          <td className="px-3 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            {player.first_name} {player.last_name}
+                          </td>
+                          <td className="px-3 py-4 whitespace-nowrap">
+                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                              player.gender === 'M' 
+                                ? 'bg-blue-100 text-blue-800' 
+                                : 'bg-pink-100 text-pink-800'
+                            }`}>
+                              {player.gender === 'M' ? 'Homme' : 'Femme'}
+                            </span>
+                          </td>
+                          <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {new Date(player.date_of_birth).toLocaleDateString('fr-FR')}
+                          </td>
+                          <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {player.license_number}
+                          </td>
+                          <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {player.license_type}
+                          </td>
+                          <td className="px-3 py-4 text-sm text-gray-900">
+                            {player.collectives.length > 0 ? (
+                              <div className="flex flex-wrap gap-1">
+                                {player.collectives.map((collective) => (
+                                  <span 
+                                    key={collective.collective_id}
+                                    className="inline-flex px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full"
+                                  >
+                                    {collective.name}
+                                  </span>
+                                ))}
+                              </div>
+                            ) : (
+                              <span className="text-gray-400 text-xs">Aucun</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="text-center py-6">
+                  <div className="text-gray-400 text-sm sm:text-base">Aucun joueur trouvé</div>
+                  <p className="text-gray-300 text-xs sm:text-sm mt-1">Les joueurs apparaîtront ici</p>
                 </div>
               )}
             </div>
