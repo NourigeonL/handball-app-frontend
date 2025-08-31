@@ -9,6 +9,7 @@ import Link from 'next/link';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import Pagination from '@/components/Pagination';
 import AddPlayerToCollective from '@/components/AddPlayerToCollective';
+import { useWebSocket } from '@/contexts/WebSocketContext';
 
 export default function CollectivePage() {
   return (
@@ -116,6 +117,56 @@ function CollectiveContent() {
       setLoading(false);
     }
   }, [params.club_id, params.collective_id, isClubSelected]);
+
+  // WebSocket hook for real-time updates
+  const { isConnected, subscribe } = useWebSocket();
+
+  // Subscribe to WebSocket events
+  useEffect(() => {
+    const unsubscribeCollective = subscribe('club_collective_list_updated', (data) => {
+      console.log('Collective list update received, refreshing collective data...');
+      
+      // Refresh collective information
+      const fetchCollective = async () => {
+        try {
+          const data = await authenticatedGet(
+            `${process.env.NEXT_PUBLIC_API_URL}/collectives/${params.collective_id}`
+          );
+          setCollective(data);
+        } catch (err) {
+          console.error('Error refreshing collective data:', err);
+        }
+      };
+      
+      // Refresh collective players
+      const fetchCollectivePlayers = async () => {
+        try {
+          const data = await authenticatedGet(
+            `${process.env.NEXT_PUBLIC_API_URL}/collectives/${params.collective_id}/players?page=${currentPage}&per_page=${perPage}`
+          ) as PaginatedPlayersResponse;
+          setPlayers(data.results);
+          setPagination({
+            total_count: data.total_count,
+            total_page: data.total_page,
+            count: data.count,
+            page: data.page
+          });
+        } catch (err) {
+          console.error('Error refreshing collective players:', err);
+        }
+      };
+
+      fetchCollective();
+      fetchCollectivePlayers();
+    });
+
+    // Cleanup subscriptions on unmount
+    return () => {
+      unsubscribeCollective();
+    };
+  }, [subscribe, params.collective_id, currentPage, perPage]);
+
+
 
   // Function to fetch collective players
   const fetchCollectivePlayers = async (page: number = 0) => {

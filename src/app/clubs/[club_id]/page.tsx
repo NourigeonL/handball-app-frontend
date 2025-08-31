@@ -10,6 +10,7 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import Pagination from '@/components/Pagination';
 import PlayerRegistrationForm from '@/components/PlayerRegistrationForm';
 import CollectiveCreationForm from '@/components/CollectiveCreationForm';
+import { useWebSocket } from '@/contexts/WebSocketContext';
 
 
 export default function ClubMainPage() {
@@ -40,8 +41,6 @@ function ClubContent() {
   const [error, setError] = useState<string | null>(null);
   const [showRegistrationForm, setShowRegistrationForm] = useState(false);
   const [showCollectiveForm, setShowCollectiveForm] = useState(false);
-  const [wsConnection, setWsConnection] = useState<WebSocket | null>(null);
-  const [sessionId, setSessionId] = useState<string | null>(null);
 
     useEffect(() => {
     console.log('ClubContent useEffect:', { 
@@ -139,183 +138,7 @@ function ClubContent() {
       setError('Aucun club sélectionné');
       setLoading(false);
     }
-  }, [params.club_id, isClubSelected]);
-
-  // WebSocket connection effect
-  useEffect(() => {
-    if (!params.club_id) return;
-
-    // Check if WebSocket is supported
-    if (typeof WebSocket === 'undefined') {
-      console.log('WebSocket not supported in this environment');
-      return;
-    }
-
-    // Function to establish WebSocket connection with session ID
-    const connectWebSocket = async () => {
-      try {
-        // Get session ID if not already available
-        let currentSessionId = sessionId;
-        if (!currentSessionId) {
-          currentSessionId = await getSessionId();
-        }
-
-        if (!currentSessionId) {
-          console.error('Failed to get session ID, cannot connect to WebSocket');
-          return;
-        }
-
-        const wsUrl = `${process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000'}/ws?session_id=${currentSessionId}`;
-        console.log('Attempting to connect to WebSocket:', wsUrl);
-        
-        let ws: WebSocket;
-        let connectionTimeout: NodeJS.Timeout | null = null;
-
-        try {
-          ws = new WebSocket(wsUrl);
-      
-          // Set connection timeout
-          connectionTimeout = setTimeout(() => {
-            if (ws.readyState === WebSocket.CONNECTING) {
-              console.error('WebSocket connection timeout');
-              ws.close();
-            }
-          }, 5000); // 5 second timeout
-
-          ws.onopen = () => {
-            console.log('WebSocket connected successfully to:', wsUrl);
-            if (connectionTimeout) clearTimeout(connectionTimeout);
-            setWsConnection(ws);
-          };
-
-                    ws.onmessage = (event) => {
-            try {
-              const data = JSON.parse(event.data);
-              console.log('WebSocket message received:', data);
-
-              if (data.type === 'club_player_list_updated') {
-                console.log('Player list update received, refreshing data...');
-                // Refresh players list, club info, and collectives
-                fetchPlayers(currentPage);
-                if (params.club_id) {
-                  const fetchClubInfo = async () => {
-                    try {
-                      const clubData = await authenticatedGet(
-                        `${process.env.NEXT_PUBLIC_API_URL}/clubs/${params.club_id}/info`
-                      );
-                      setClubInfo(clubData);
-                    } catch (err) {
-                      console.error('Error refreshing club info:', err);
-                    }
-                  };
-                  fetchClubInfo();
-                }
-                const fetchCollectives = async () => {
-                  try {
-                    const collectivesData = await authenticatedGet(
-                      `${process.env.NEXT_PUBLIC_API_URL}/collectives`
-                    );
-                    setCollectives(collectivesData);
-                  } catch (err) {
-                    console.error('Error refreshing collectives:', err);
-                  }
-                };
-                fetchCollectives();
-              } else if (data.type === 'club_collective_list_updated') {
-                console.log('Collective list update received, refreshing data...');
-                // Refresh collectives list and club info
-                const fetchCollectives = async () => {
-                  try {
-                    const collectivesData = await authenticatedGet(
-                      `${process.env.NEXT_PUBLIC_API_URL}/collectives`
-                    );
-                    setCollectives(collectivesData);
-                  } catch (err) {
-                    console.error('Error refreshing collectives:', err);
-                  }
-                };
-                fetchCollectives();
-                
-                // Refresh club info to show updated collective count
-                if (params.club_id) {
-                  const fetchClubInfo = async () => {
-                    try {
-                      const clubData = await authenticatedGet(
-                        `${process.env.NEXT_PUBLIC_API_URL}/clubs/${params.club_id}/info`
-                      );
-                      setClubInfo(clubData);
-                    } catch (err) {
-                      console.error('Error refreshing club info:', err);
-                    }
-                  };
-                  fetchClubInfo();
-                }
-              }
-            } catch (error) {
-              console.error('Error parsing WebSocket message:', error);
-            }
-          };
-
-          ws.onerror = (event) => {
-            console.error('WebSocket connection error. URL:', wsUrl);
-            console.error('WebSocket readyState:', ws.readyState);
-            console.error('Error event:', event);
-            
-            // Try to get more specific error information
-            if (ws.readyState === WebSocket.CONNECTING) {
-              console.error('Failed to establish WebSocket connection');
-            }
-          };
-
-          ws.onclose = (event) => {
-            console.log('WebSocket disconnected. Code:', event.code, 'Reason:', event.reason);
-            if (connectionTimeout) clearTimeout(connectionTimeout);
-            setWsConnection(null);
-          };
-
-        } catch (error) {
-          console.error('Error creating WebSocket:', error);
-          if (connectionTimeout) clearTimeout(connectionTimeout);
-          return;
-        }
-      } catch (error) {
-        console.error('Error in connectWebSocket:', error);
-      }
-    };
-
-    // Call the connection function
-    connectWebSocket();
-  }, [params.club_id, currentPage, sessionId]);
-
-  // Cleanup WebSocket connection on unmount
-  useEffect(() => {
-    return () => {
-      if (wsConnection && wsConnection.readyState === WebSocket.OPEN) {
-        wsConnection.close();
-      }
-    };
-  }, [wsConnection]);
-
-  // Function to get session ID from backend
-  const getSessionId = async () => {
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/session`, {
-        method: 'GET',
-        credentials: 'include',
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        if (data.session_id) {
-          setSessionId(data.session_id);
-          return data.session_id;
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching session ID:', error);
-    }
-    return null;
-  };
+    }, [params.club_id, isClubSelected]);
 
   // Function to fetch players
   const fetchPlayers = async (page: number = 0) => {
@@ -335,6 +158,79 @@ function ClubContent() {
       // Don't set error for players, just log it
     }
   };
+
+  // WebSocket hook for real-time updates
+  const { isConnected, subscribe } = useWebSocket();
+
+  // Subscribe to WebSocket events
+  useEffect(() => {
+    const unsubscribePlayer = subscribe('club_player_list_updated', (data) => {
+      console.log('Player list update received, refreshing data...');
+      // Refresh players list, club info, and collectives
+      fetchPlayers(currentPage);
+      if (params.club_id) {
+        const fetchClubInfo = async () => {
+          try {
+            const clubData = await authenticatedGet(
+              `${process.env.NEXT_PUBLIC_API_URL}/clubs/${params.club_id}/info`
+            );
+            setClubInfo(clubData);
+          } catch (err) {
+            console.error('Error refreshing club info:', err);
+          }
+        };
+        fetchClubInfo();
+      }
+      const fetchCollectives = async () => {
+        try {
+          const collectivesData = await authenticatedGet(
+            `${process.env.NEXT_PUBLIC_API_URL}/collectives`
+          );
+          setCollectives(collectivesData);
+        } catch (err) {
+          console.error('Error refreshing collectives:', err);
+        }
+      };
+      fetchCollectives();
+    });
+
+    const unsubscribeCollective = subscribe('club_collective_list_updated', (data) => {
+      console.log('Collective list update received, refreshing data...');
+      // Refresh collectives list and club info
+      const fetchCollectives = async () => {
+        try {
+          const collectivesData = await authenticatedGet(
+            `${process.env.NEXT_PUBLIC_API_URL}/collectives`
+          );
+          setCollectives(collectivesData);
+        } catch (err) {
+          console.error('Error refreshing collectives:', err);
+        }
+      };
+      fetchCollectives();
+      
+      // Refresh club info to show updated collective count
+      if (params.club_id) {
+        const fetchClubInfo = async () => {
+          try {
+            const clubData = await authenticatedGet(
+              `${process.env.NEXT_PUBLIC_API_URL}/clubs/${params.club_id}/info`
+            );
+            setClubInfo(clubData);
+          } catch (err) {
+            console.error('Error refreshing club info:', err);
+          }
+        };
+        fetchClubInfo();
+      }
+    });
+
+    // Cleanup subscriptions on unmount
+    return () => {
+      unsubscribePlayer();
+      unsubscribeCollective();
+    };
+  }, [subscribe, fetchPlayers, currentPage, params.club_id]);
 
   // Function to change page
   const handlePageChange = (newPage: number) => {
@@ -485,9 +381,9 @@ function ClubContent() {
                 Membre
               </span>
               <div className="flex items-center space-x-2">
-                <div className={`w-2 h-2 rounded-full ${wsConnection ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
                 <span className="text-xs text-gray-500">
-                  {wsConnection ? 'Connecté' : 'Déconnecté'}
+                  {isConnected ? 'Connecté' : 'Déconnecté'}
                 </span>
               </div>
             </div>
