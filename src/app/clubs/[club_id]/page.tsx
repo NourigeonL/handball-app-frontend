@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { Club, ClubInfo } from '@/types/clubs';
+import { Club, ClubInfo, Collective } from '@/types/clubs';
 import { authenticatedGet } from '@/utils/api';
 import Link from 'next/link';
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -23,6 +23,7 @@ function ClubContent() {
   const { isClubSelected, isLoading: authLoading } = useAuth();
   const [club, setClub] = useState<Club | null>(null);
   const [clubInfo, setClubInfo] = useState<ClubInfo | null>(null);
+  const [collectives, setCollectives] = useState<Collective[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -77,6 +78,21 @@ function ClubContent() {
         };
 
         fetchClubInfo();
+        
+        // Fetch collectives
+        const fetchCollectives = async () => {
+          try {
+            const data = await authenticatedGet(
+              `${process.env.NEXT_PUBLIC_API_URL}/collectives`
+            );
+            setCollectives(data);
+          } catch (err) {
+            console.error('Error fetching collectives:', err);
+            // Don't set error for collectives, just log it
+          }
+        };
+        
+        fetchCollectives();
       } catch (error) {
         console.error('Error parsing stored club data:', error);
         setError('Erreur lors de la récupération des données du club');
@@ -245,6 +261,36 @@ function ClubContent() {
                       <span className="text-gray-900 mt-1 ml-0 sm:ml-2 text-sm sm:text-base">{clubInfo.founded_year}</span>
                     </div>
                   )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Collectives Section */}
+          <div className="lg:col-span-1">
+            <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4">Collectifs</h2>
+              
+              {collectives.length > 0 ? (
+                <div className="space-y-3">
+                  {collectives.map((collective) => (
+                    <div key={collective.collective_id} className="border border-gray-200 rounded-lg p-3 hover:bg-gray-50 transition-colors">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="font-semibold text-gray-900 text-sm sm:text-base">{collective.name}</h3>
+                        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                          {collective.nb_players} joueur{collective.nb_players !== 1 ? 's' : ''}
+                        </span>
+                      </div>
+                      {collective.description && (
+                        <p className="text-gray-600 text-xs sm:text-sm">{collective.description}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-6">
+                  <div className="text-gray-400 text-sm sm:text-base">Aucune équipe trouvée</div>
+                  <p className="text-gray-300 text-xs sm:text-sm mt-1">Les équipes apparaîtront ici</p>
                 </div>
               )}
             </div>

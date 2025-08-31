@@ -17,6 +17,13 @@ export interface ClubInfo extends Club {
   // Add more fields as needed based on your backend response
 }
 
+export interface Collective {
+  collective_id: string;
+  name: string;
+  description: string;
+  nb_players: number;
+}
+
 export interface ClubsResponse {
   clubs: Club[];
 }
