@@ -35,6 +35,16 @@ export interface Player {
   collectives: Collective[];
 }
 
+export interface CollectivePlayer {
+  player_id: string;
+  first_name: string;
+  last_name: string;
+  gender: 'M' | 'F';
+  date_of_birth: string;
+  license_number: string;
+  license_type: string;
+}
+
 export interface ClubsResponse {
   clubs: Club[];
 }

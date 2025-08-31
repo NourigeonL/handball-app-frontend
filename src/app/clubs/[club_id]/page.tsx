@@ -290,7 +290,11 @@ function ClubContent() {
               {collectives.length > 0 ? (
                 <div className="space-y-3">
                   {collectives.map((collective) => (
-                    <div key={collective.collective_id} className="border border-gray-200 rounded-lg p-3 hover:bg-gray-50 transition-colors">
+                    <Link 
+                      key={collective.collective_id} 
+                      href={`/clubs/${params.club_id}/collectives/${collective.collective_id}`}
+                      className="border border-gray-200 rounded-lg p-3 hover:bg-gray-50 transition-colors cursor-pointer block"
+                    >
                       <div className="flex items-center justify-between mb-2">
                         <h3 className="font-semibold text-gray-900 text-sm sm:text-base">{collective.name}</h3>
                         <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
@@ -300,7 +304,7 @@ function ClubContent() {
                       {collective.description && (
                         <p className="text-gray-600 text-xs sm:text-sm">{collective.description}</p>
                       )}
-                    </div>
+                    </Link>
                   ))}
                 </div>
               ) : (
