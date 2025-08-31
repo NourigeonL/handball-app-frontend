@@ -53,6 +53,20 @@ export interface PaginatedPlayersResponse {
   results: Player[];
 }
 
+export interface PlayerRegistrationData {
+  first_name: string;
+  last_name: string;
+  gender: 'M' | 'F';
+  date_of_birth: string;
+  license_number: string;
+  license_type: string;
+}
+
+export interface CollectiveCreationData {
+  name: string;
+  description: string | null;
+}
+
 export interface ClubsResponse {
   clubs: Club[];
 }

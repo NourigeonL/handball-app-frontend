@@ -8,6 +8,8 @@ import { authenticatedGet } from '@/utils/api';
 import Link from 'next/link';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import Pagination from '@/components/Pagination';
+import PlayerRegistrationForm from '@/components/PlayerRegistrationForm';
+import CollectiveCreationForm from '@/components/CollectiveCreationForm';
 
 
 export default function ClubMainPage() {
@@ -33,9 +35,11 @@ function ClubContent() {
     page: 0
   });
   const [currentPage, setCurrentPage] = useState(0);
-  const [perPage] = useState(2);
+  const [perPage] = useState(10);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showRegistrationForm, setShowRegistrationForm] = useState(false);
+  const [showCollectiveForm, setShowCollectiveForm] = useState(false);
 
     useEffect(() => {
     console.log('ClubContent useEffect:', { 
@@ -159,6 +163,70 @@ function ClubContent() {
     if (newPage >= 0 && newPage < pagination.total_page) {
       setCurrentPage(newPage);
       fetchPlayers(newPage);
+    }
+  };
+
+  // Function to handle successful player registration
+  const handlePlayerRegistrationSuccess = () => {
+    setShowRegistrationForm(false);
+    // Refresh the players list and club info
+    fetchPlayers(currentPage);
+    // Refresh club info to update player count
+    if (params.club_id) {
+      const fetchClubInfo = async () => {
+        try {
+          const data = await authenticatedGet(
+            `${process.env.NEXT_PUBLIC_API_URL}/clubs/${params.club_id}/info`
+          );
+          setClubInfo(data);
+        } catch (err) {
+          console.error('Error refreshing club info:', err);
+        }
+      };
+      fetchClubInfo();
+    }
+    // Refresh collectives to show updated player counts
+    const fetchCollectives = async () => {
+      try {
+        const data = await authenticatedGet(
+          `${process.env.NEXT_PUBLIC_API_URL}/collectives`
+        );
+        setCollectives(data);
+      } catch (err) {
+        console.error('Error refreshing collectives:', err);
+      }
+    };
+    fetchCollectives();
+  };
+
+  // Function to handle successful collective creation
+  const handleCollectiveCreationSuccess = () => {
+    setShowCollectiveForm(false);
+    // Refresh the collectives list
+    const fetchCollectives = async () => {
+      try {
+        const data = await authenticatedGet(
+          `${process.env.NEXT_PUBLIC_API_URL}/collectives`
+        );
+        setCollectives(data);
+      } catch (err) {
+        console.error('Error refreshing collectives:', err);
+      }
+    };
+    fetchCollectives();
+    // Refresh club info to show updated collective count
+    if (params.club_id) {
+      const fetchClubInfo = async () => {
+        try {
+          const data = await authenticatedGet(
+            `${process.env.NEXT_PUBLIC_API_URL}/clubs/${params.club_id}/info`
+          );
+          setClubInfo(data);
+        } catch (err) {
+          console.error('Error refreshing club info:', err);
+        }
+      };
+      fetchClubInfo();
     }
   };
 
@@ -327,7 +395,18 @@ function ClubContent() {
           {/* Collectives Section */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6">
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4">Collectifs</h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Collectifs</h2>
+                <button
+                  onClick={() => setShowCollectiveForm(true)}
+                  className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium flex items-center space-x-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  <span>Ajouter</span>
+                </button>
+              </div>
               
               {collectives.length > 0 ? (
                 <div className="space-y-3">
@@ -351,8 +430,8 @@ function ClubContent() {
                 </div>
               ) : (
                 <div className="text-center py-6">
-                  <div className="text-gray-400 text-sm sm:text-base">Aucune équipe trouvée</div>
-                  <p className="text-gray-300 text-xs sm:text-sm mt-1">Les équipes apparaîtront ici</p>
+                  <div className="text-gray-400 text-sm sm:text-base">Aucun collectif trouvée</div>
+                  <p className="text-gray-300 text-xs sm:text-sm mt-1">Les collectifs apparaîtront ici</p>
                 </div>
               )}
             </div>
@@ -361,7 +440,18 @@ function ClubContent() {
           {/* Players Section */}
           <div className="lg:col-span-3 mt-6">
             <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6">
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4">Joueurs</h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Joueurs</h2>
+                <button
+                  onClick={() => setShowRegistrationForm(true)}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium flex items-center space-x-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  <span>Ajouter un joueur</span>
+                </button>
+              </div>
               
               {players.length > 0 ? (
                 <div className="overflow-x-auto">
@@ -453,6 +543,22 @@ function ClubContent() {
           </div>
         </div>
       </div>
+      
+      {/* Player Registration Form Modal */}
+      {showRegistrationForm && (
+        <PlayerRegistrationForm
+          onSuccess={handlePlayerRegistrationSuccess}
+          onCancel={() => setShowRegistrationForm(false)}
+        />
+      )}
+      
+      {/* Collective Creation Form Modal */}
+      {showCollectiveForm && (
+        <CollectiveCreationForm
+          onSuccess={handleCollectiveCreationSuccess}
+          onCancel={() => setShowCollectiveForm(false)}
+        />
+      )}
     </div>
   );
 }
