@@ -48,71 +48,135 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         credentials: 'include', // Include cookies
       });
 
-      if (response.ok) {
-        const sessionData = await response.json();
-        console.log('Session data:', sessionData);
-        
-        // Extract user data from session
-        const userData = sessionData.user || sessionData;
-        
-        // Fetch user's clubs
-        const clubsResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/clubs/my-clubs`, {
-          method: 'GET',
-          credentials: 'include',
-        });
-
-        let userClubs: UserClub[] = [];
-        if (clubsResponse.ok) {
-          const clubsData = await clubsResponse.json();
-          userClubs = clubsData.clubs || clubsData || [];
-        }
-
-        // Check for stored club selection
-        const selectedClubData = localStorage.getItem('selectedClub');
-        let selectedClub = selectedClubData ? JSON.parse(selectedClubData) : null;
-        let isClubSelected = !!selectedClub;
-        
-        // Auto-select club if user has only one and none is selected
-        if (!selectedClub && userClubs.length === 1) {
-          console.log('Auto-selecting single club:', userClubs[0]);
-          selectedClub = userClubs[0];
-          isClubSelected = true;
-          localStorage.setItem('selectedClub', JSON.stringify(selectedClub));
+        if (response.ok) {
+          const sessionData = await response.json();
+          console.log('Session data:', sessionData);
           
-          // Auto-login to the club to establish session
-          try {
-            const roles = await loginToClub(selectedClub.club_id);
-            // Update club with roles
-            selectedClub = { ...selectedClub, roles };
+          // Extract user data from session
+          const userData = sessionData.user || sessionData;
+          
+          // If we have a google_id_token, decode it to get Google profile info
+          let enhancedUser = userData;
+          if (sessionData.google_id_token) {
+            try {
+              const googleProfile = decodeGoogleIdToken(sessionData.google_id_token);
+              console.log('Decoded Google profile from stored token:', googleProfile);
+              
+              // Create enhanced user object with Google profile information
+              enhancedUser = {
+                ...userData,
+                googleProfile: googleProfile || undefined,
+                // Extract display information for easy access
+                first_name: googleProfile?.given_name || userData.first_name,
+                last_name: googleProfile?.family_name || userData.last_name,
+                profile_picture: googleProfile?.picture || userData.profile_picture,
+              };
+              
+              console.log('Enhanced user object from stored token:', enhancedUser);
+            } catch (error) {
+              console.error('Error decoding stored Google ID token:', error);
+              // Continue with original user data if decoding fails
+            }
+          }
+          
+          // Fetch user's clubs
+          const clubsResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/clubs/my-clubs`, {
+            method: 'GET',
+            credentials: 'include',
+          });
+
+          let userClubs: UserClub[] = [];
+          if (clubsResponse.ok) {
+            const clubsData = await clubsResponse.json();
+            userClubs = clubsData.clubs || clubsData || [];
+          }
+
+          // Check for stored club selection - prioritize session data over localStorage
+          let selectedClub = null;
+          let isClubSelected = false;
+          
+          // First check if there's a club_id in the session data
+          if (sessionData.club_id) {
+            // Find the club in userClubs that matches the session club_id
+            const sessionClub = userClubs.find(club => club.club_id === sessionData.club_id);
+            if (sessionClub) {
+              selectedClub = sessionClub;
+              isClubSelected = true;
+              localStorage.setItem('selectedClub', JSON.stringify(selectedClub));
+              console.log('Using club from session data:', selectedClub);
+            }
+          }
+          
+          // If no club from session, check localStorage
+          if (!selectedClub) {
+            const selectedClubData = localStorage.getItem('selectedClub');
+            if (selectedClubData) {
+              try {
+                selectedClub = JSON.parse(selectedClubData);
+                isClubSelected = true;
+                console.log('Using club from localStorage:', selectedClub);
+              } catch (error) {
+                console.error('Error parsing stored club data:', error);
+              }
+            }
+          }
+          
+          // Auto-select club if user has only one and none is selected
+          if (!selectedClub && userClubs.length === 1) {
+            console.log('Auto-selecting single club:', userClubs[0]);
+            selectedClub = userClubs[0];
+            isClubSelected = true;
             localStorage.setItem('selectedClub', JSON.stringify(selectedClub));
-            console.log('Successfully auto-logged into club with roles:', roles);
-          } catch (error) {
-            console.error('Failed to auto-login to club:', error);
-            // Still proceed with club selection, but log the error
-            // The user will need to manually log into the club later
+            
+            // Auto-login to the club to establish session
+            try {
+              const roles = await loginToClub(selectedClub.club_id);
+              // Update club with roles
+              selectedClub = { ...selectedClub, roles };
+              localStorage.setItem('selectedClub', JSON.stringify(selectedClub));
+              console.log('Successfully auto-logged into club with roles:', roles);
+            } catch (error) {
+              console.error('Failed to auto-login to club:', error);
+              // Still proceed with club selection, but log the error
+              // The user will need to manually log into the club later
+            }
+            
+            // Redirect to the club page if we're not already there
+            if (typeof window !== 'undefined' && window.location.pathname !== `/clubs/${selectedClub.club_id}`) {
+              console.log('Redirecting to club page:', `/clubs/${selectedClub.club_id}`);
+              window.location.href = `/clubs/${selectedClub.club_id}`;
+            }
           }
           
-          // Redirect to the club page if we're not already there
-          if (typeof window !== 'undefined' && window.location.pathname !== `/clubs/${selectedClub.club_id}`) {
-            console.log('Redirecting to club page:', `/clubs/${selectedClub.club_id}`);
-            window.location.href = `/clubs/${selectedClub.club_id}`;
+          // If we have a selected club (from session or localStorage), ensure we're logged into it
+          if (selectedClub && !selectedClub.roles) {
+            console.log('Ensuring club login for selected club:', selectedClub);
+            try {
+              const roles = await loginToClub(selectedClub.club_id);
+              // Update club with roles
+              selectedClub = { ...selectedClub, roles };
+              localStorage.setItem('selectedClub', JSON.stringify(selectedClub));
+              console.log('Successfully logged into selected club with roles:', roles);
+            } catch (error) {
+              console.error('Failed to login to selected club:', error);
+              // Still proceed with club selection, but log the error
+            }
           }
-        }
-        
-        console.log('Setting auth state after auto-selection:', {
-          selectedClub,
-          isClubSelected,
-          userClubsLength: userClubs.length
-        });
-        
-        setAuthState({
-          user: userData,
-          isAuthenticated: true,
-          isLoading: false,
-          selectedClub,
-          userClubs,
-          isClubSelected,
-        });
+          
+          console.log('Setting auth state after auto-selection:', {
+            selectedClub,
+            isClubSelected,
+            userClubsLength: userClubs.length
+          });
+          
+          setAuthState({
+            user: enhancedUser,
+            isAuthenticated: true,
+            isLoading: false,
+            selectedClub,
+            userClubs,
+            isClubSelected,
+          });
       } else {
         // User is not authenticated
         console.log('User is not authenticated');
