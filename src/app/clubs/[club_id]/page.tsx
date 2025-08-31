@@ -374,12 +374,13 @@ function ClubContent() {
                             {player.collectives.length > 0 ? (
                               <div className="flex flex-wrap gap-1">
                                 {player.collectives.map((collective) => (
-                                  <span 
+                                  <Link
                                     key={collective.collective_id}
-                                    className="inline-flex px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full"
+                                    href={`/clubs/${params.club_id}/collectives/${collective.collective_id}`}
+                                    className="inline-flex px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200 transition-colors cursor-pointer"
                                   >
                                     {collective.name}
-                                  </span>
+                                  </Link>
                                 ))}
                               </div>
                             ) : (
