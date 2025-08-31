@@ -20,46 +20,101 @@ export default function ClubMainPage() {
 function ClubContent() {
   const params = useParams();
   const router = useRouter();
+  const { isClubSelected, isLoading: authLoading } = useAuth();
   const [club, setClub] = useState<Club | null>(null);
   const [clubInfo, setClubInfo] = useState<ClubInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+    useEffect(() => {
+    console.log('ClubContent useEffect:', { 
+      isClubSelected, 
+      clubId: params.club_id,
+      authLoading 
+    });
+    
+    // Only proceed if a club is selected
+    if (!isClubSelected) {
+      console.log('No club selected, setting loading to false');
+      setLoading(false);
+      return;
+    }
+
     const clubId = params.club_id as string;
     
     // Get the club from localStorage (stored when clicking the card)
     const storedClub = localStorage.getItem('selectedClub');
+    console.log('Stored club from localStorage:', storedClub);
+    
     if (storedClub) {
       try {
         const clubData = JSON.parse(storedClub);
+        
+        // Check if the selected club matches the URL parameter
+        if (clubData.club_id !== clubId) {
+          setError('Le club sélectionné ne correspond pas à l\'URL demandée');
+          setLoading(false);
+          return;
+        }
+        
         setClub(clubData);
+        
+        // Fetch detailed club information
+        const fetchClubInfo = async () => {
+          try {
+            const data = await authenticatedGet(
+              `${process.env.NEXT_PUBLIC_API_URL}/clubs/${clubId}/info`
+            );
+            setClubInfo(data);
+          } catch (err) {
+            setError(err instanceof Error ? err.message : 'Échec de la récupération des informations du club');
+          } finally {
+            setLoading(false);
+          }
+        };
+
+        fetchClubInfo();
       } catch (error) {
         console.error('Error parsing stored club data:', error);
-      }
-    }
-
-    // Fetch detailed club information
-    const fetchClubInfo = async () => {
-      try {
-        const data = await authenticatedGet(
-          `${process.env.NEXT_PUBLIC_API_URL}/clubs/${clubId}/info`
-        );
-        setClubInfo(data);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Échec de la récupération des informations du club');
-      } finally {
+        setError('Erreur lors de la récupération des données du club');
         setLoading(false);
       }
-    };
+    } else {
+      setError('Aucun club sélectionné');
+      setLoading(false);
+    }
+  }, [params.club_id, isClubSelected]);
 
-    fetchClubInfo();
-  }, [params.club_id]);
+  // Wait for auth context to finish loading
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (!isClubSelected) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-gray-600 text-lg mb-4">Aucun club sélectionné</div>
+          <p className="text-gray-500 mb-6">Veuillez sélectionner un club depuis le tableau de bord</p>
+          <Link 
+            href="/" 
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Retour au Tableau de Bord
+          </Link>
+        </div>
       </div>
     );
   }

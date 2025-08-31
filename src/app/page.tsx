@@ -12,12 +12,8 @@ export default function Home() {
   const { userClubs, isClubSelected, selectedClub } = useAuth();
   const router = useRouter();
 
-  // Redirect users with a selected club to their club page (default landing page)
-  useEffect(() => {
-    if (isClubSelected && selectedClub) {
-      router.replace(`/clubs/${selectedClub.club_id}`);
-    }
-  }, [isClubSelected, selectedClub, router]);
+  // Don't automatically redirect - let users choose when to go to their club
+  // This prevents race conditions with club selection
 
   return (
     <ProtectedRoute>
