@@ -102,8 +102,8 @@ function TrainingSessionsContent() {
   };
 
   // Function to get attendance status color
-  const getAttendanceColor = (present: number, absent: number, late: number, absentWithoutReason: number) => {
-    const total = present + absent + late + absentWithoutReason;
+  const getAttendanceColor = (present: number, absent: number, late: number) => {
+    const total = present + absent + late;
     if (total === 0) return 'text-gray-700';
     
     const attendanceRate = present / total;
@@ -234,9 +234,7 @@ function TrainingSessionsContent() {
                     <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       En Retard
                     </th>
-                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Absents sans Raison
-                    </th>
+                    
                     <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Taux de Présence
                     </th>
@@ -244,10 +242,9 @@ function TrainingSessionsContent() {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {trainingSessions.map((session) => {
-                    const total = session.number_of_players_present + 
-                                 session.number_of_players_absent + 
-                                 session.number_of_players_late + 
-                                 session.number_of_players_absent_without_reason;
+                                         const total = session.number_of_players_present + 
+                                  session.number_of_players_absent + 
+                                  session.number_of_players_late;
                     const attendanceRate = total > 0 ? (session.number_of_players_present / total) * 100 : 0;
                     
                                          return (
@@ -280,18 +277,13 @@ function TrainingSessionsContent() {
                             {session.number_of_players_late}
                           </span>
                         </td>
+                        
                         <td className="px-3 py-4 whitespace-nowrap">
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
-                            {session.number_of_players_absent_without_reason}
-                          </span>
-                        </td>
-                        <td className="px-3 py-4 whitespace-nowrap">
-                          <span className={`text-sm font-medium ${getAttendanceColor(
-                            session.number_of_players_present,
-                            session.number_of_players_absent,
-                            session.number_of_players_late,
-                            session.number_of_players_absent_without_reason
-                          )}`}>
+                                                     <span className={`text-sm font-medium ${getAttendanceColor(
+                             session.number_of_players_present,
+                             session.number_of_players_absent,
+                             session.number_of_players_late
+                           )}`}>
                             {attendanceRate.toFixed(1)}%
                           </span>
                         </td>

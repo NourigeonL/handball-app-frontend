@@ -305,21 +305,20 @@ function TrainingSessionDetailContent() {
                 {Math.round((new Date(trainingSession.end_time).getTime() - new Date(trainingSession.start_time).getTime()) / (1000 * 60))} min
               </div>
             </div>
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <div className="text-sm font-medium text-gray-500">Total Joueurs</div>
-              <div className="text-lg font-semibold text-gray-900">
-                {trainingSession.number_of_players_present + 
-                 trainingSession.number_of_players_absent + 
-                 trainingSession.number_of_players_late + 
-                 trainingSession.number_of_players_absent_without_reason}
-              </div>
-            </div>
+                         <div className="bg-gray-50 p-4 rounded-lg">
+               <div className="text-sm font-medium text-gray-500">Total Joueurs</div>
+               <div className="text-lg font-semibold text-gray-900">
+                 {trainingSession.number_of_players_present + 
+                  trainingSession.number_of_players_absent + 
+                  trainingSession.number_of_players_late}
+               </div>
+             </div>
           </div>
 
           {/* Attendance Summary */}
           <div className="mt-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-3">Résumé de Présence</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                         <div className="grid grid-cols-3 gap-4">
               <div className="text-center">
                 <div className="text-2xl font-bold text-green-600">{trainingSession.number_of_players_present}</div>
                 <div className="text-sm text-gray-500">Présents</div>
@@ -332,10 +331,7 @@ function TrainingSessionDetailContent() {
                 <div className="text-2xl font-bold text-yellow-600">{trainingSession.number_of_players_late}</div>
                 <div className="text-sm text-gray-500">En Retard</div>
               </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-orange-600">{trainingSession.number_of_players_absent_without_reason}</div>
-                <div className="text-sm text-gray-500">Absents sans Raison</div>
-              </div>
+              
             </div>
           </div>
         </div>

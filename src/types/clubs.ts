@@ -78,7 +78,6 @@ export interface TrainingSession {
   number_of_players_present: number;
   number_of_players_absent: number;
   number_of_players_late: number;
-  number_of_players_absent_without_reason: number;
 }
 
 export interface PaginatedTrainingSessionsResponse {
