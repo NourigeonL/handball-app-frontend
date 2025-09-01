@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { authenticatedClubGet } from '@/utils/api';
+import { authenticatedClubGet, authenticatedClubPost } from '@/utils/api';
 
 interface Player {
   player_id: string;
@@ -37,6 +37,12 @@ export default function AddPlayerToTrainingSession({
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [markingPresent, setMarkingPresent] = useState<string | null>(null);
+  const [markingAbsent, setMarkingAbsent] = useState<string | null>(null);
+  const [showAbsentModal, setShowAbsentModal] = useState(false);
+  const [selectedPlayerForAbsent, setSelectedPlayerForAbsent] = useState<Player | null>(null);
+  const [absentReason, setAbsentReason] = useState('');
+  const [withReason, setWithReason] = useState(false);
 
   // Fetch collectives for filtering
   useEffect(() => {
@@ -150,6 +156,82 @@ export default function AddPlayerToTrainingSession({
     return `${firstName} ${lastName}`;
   };
 
+  // Mark player as present
+  const markPlayerAsPresent = async (playerId: string) => {
+    setMarkingPresent(playerId);
+    setError(null);
+
+    try {
+      await authenticatedClubPost(
+        `/training-sessions/${trainingSessionId}/change-player-status/${playerId}/present`
+      );
+      
+      // Remove the player from search results
+      setSearchResults(prev => prev.filter(player => player.player_id !== playerId));
+      
+      // Clear search if no more results
+      if (searchResults.length === 1) {
+        setSearchQuery('');
+      }
+    } catch (err) {
+      console.error('Error marking player as present:', err);
+      setError(err instanceof Error ? err.message : 'Erreur lors du marquage du joueur comme présent');
+    } finally {
+      setMarkingPresent(null);
+    }
+  };
+
+  // Open absent modal
+  const openAbsentModal = (player: Player) => {
+    setSelectedPlayerForAbsent(player);
+    setAbsentReason('');
+    setWithReason(false);
+    setShowAbsentModal(true);
+  };
+
+  // Mark player as absent
+  const markPlayerAsAbsent = async () => {
+    if (!selectedPlayerForAbsent) return;
+
+    setMarkingAbsent(selectedPlayerForAbsent.player_id);
+    setError(null);
+
+    try {
+      await authenticatedClubPost(
+        `/training-sessions/${trainingSessionId}/change-player-status/${selectedPlayerForAbsent.player_id}/absent`,
+        {
+          reason: absentReason,
+          with_reason: withReason
+        }
+      );
+      
+      // Remove the player from search results
+      setSearchResults(prev => prev.filter(player => player.player_id !== selectedPlayerForAbsent.player_id));
+      
+      // Clear search if no more results
+      if (searchResults.length === 1) {
+        setSearchQuery('');
+      }
+
+      // Close modal
+      setShowAbsentModal(false);
+      setSelectedPlayerForAbsent(null);
+    } catch (err) {
+      console.error('Error marking player as absent:', err);
+      setError(err instanceof Error ? err.message : 'Erreur lors du marquage du joueur comme absent');
+    } finally {
+      setMarkingAbsent(null);
+    }
+  };
+
+  // Close absent modal
+  const closeAbsentModal = () => {
+    setShowAbsentModal(false);
+    setSelectedPlayerForAbsent(null);
+    setAbsentReason('');
+    setWithReason(false);
+  };
+
   // Cleanup timeout on unmount
   useEffect(() => {
     return () => {
@@ -238,10 +320,10 @@ export default function AddPlayerToTrainingSession({
                 Joueurs trouvés ({searchResults.length})
               </h3>
               <div className="space-y-3">
-                {searchResults.map((player) => (
-                                     <div
+                                 {searchResults.map((player) => (
+                   <div
                      key={player.player_id}
-                     className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                     className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
                    >
                      <div className="flex items-center space-x-4">
                        <div className="flex-shrink-0 h-12 w-12">
@@ -263,8 +345,38 @@ export default function AddPlayerToTrainingSession({
                          </div>
                        </div>
                      </div>
+                                           <div className="flex space-x-2">
+                        <button
+                          onClick={() => markPlayerAsPresent(player.player_id)}
+                          disabled={markingPresent === player.player_id || markingAbsent === player.player_id}
+                          className="px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+                        >
+                          {markingPresent === player.player_id ? (
+                            <div className="flex items-center">
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                              Marquage...
+                            </div>
+                          ) : (
+                            'Présent'
+                          )}
+                        </button>
+                        <button
+                          onClick={() => openAbsentModal(player)}
+                          disabled={markingPresent === player.player_id || markingAbsent === player.player_id}
+                          className="px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+                        >
+                          {markingAbsent === player.player_id ? (
+                            <div className="flex items-center">
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                              Marquage...
+                            </div>
+                          ) : (
+                            'Absent'
+                          )}
+                        </button>
+                      </div>
                    </div>
-                ))}
+                 ))}
               </div>
             </div>
           )}
@@ -287,9 +399,73 @@ export default function AddPlayerToTrainingSession({
                  Commencez à taper le nom ou prénom d'un joueur, ou sélectionnez un collectif pour voir les résultats
                </p>
              </div>
-           )}
-        </div>
-      )}
-    </div>
-  );
-}
+                      )}
+         </div>
+       )}
+
+       {/* Absent Modal */}
+       {showAbsentModal && selectedPlayerForAbsent && (
+         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+           <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+             <h3 className="text-lg font-semibold text-gray-900 mb-4">
+               Marquer {formatPlayerName(selectedPlayerForAbsent.first_name, selectedPlayerForAbsent.last_name)} comme absent
+             </h3>
+             
+             <div className="space-y-4">
+               <div>
+                 <label className="flex items-center">
+                   <input
+                     type="checkbox"
+                     checked={withReason}
+                     onChange={(e) => setWithReason(e.target.checked)}
+                     className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                   />
+                   <span className="ml-2 text-sm text-gray-700">Avec raison</span>
+                 </label>
+               </div>
+
+               {withReason && (
+                 <div>
+                   <label htmlFor="reason" className="block text-sm font-medium text-gray-700 mb-1">
+                     Raison de l'absence
+                   </label>
+                   <textarea
+                     id="reason"
+                     value={absentReason}
+                     onChange={(e) => setAbsentReason(e.target.value)}
+                     placeholder="Entrez la raison de l'absence..."
+                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
+                     rows={3}
+                   />
+                 </div>
+               )}
+
+               <div className="flex space-x-3 pt-4">
+                 <button
+                   onClick={closeAbsentModal}
+                   className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors text-sm font-medium"
+                 >
+                   Annuler
+                 </button>
+                 <button
+                   onClick={markPlayerAsAbsent}
+                   disabled={markingAbsent === selectedPlayerForAbsent.player_id || (withReason && !absentReason.trim())}
+                   className="flex-1 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+                 >
+                   {markingAbsent === selectedPlayerForAbsent.player_id ? (
+                     <div className="flex items-center justify-center">
+                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                       Marquage...
+                     </div>
+                   ) : (
+                     'Marquer absent'
+                   )}
+                 </button>
+               </div>
+             </div>
+           </div>
+         </div>
+       )}
+     </div>
+   );
+ }
