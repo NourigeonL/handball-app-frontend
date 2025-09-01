@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { TrainingSession } from '@/types/clubs';
-import { authenticatedClubGet } from '@/utils/api';
+import { authenticatedClubGet, authenticatedClubPost } from '@/utils/api';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import Pagination from '@/components/Pagination';
 import { useWebSocket } from '@/contexts/WebSocketContext';
@@ -21,7 +21,7 @@ interface TrainingSessionPlayer {
     license_type: string;
     collectives: any[];
   };
-  status: 'PRESENT' | 'ABSENT' | 'LATE' | 'ABSENT_WITHOUT_REASON';
+  status: 'PRESENT' | 'ABSENT' | 'LATE';
 }
 
 interface PaginatedTrainingSessionPlayersResponse {
@@ -57,6 +57,18 @@ function TrainingSessionDetailContent() {
   });
   const [currentPage, setCurrentPage] = useState(0);
   const perPage = 10;
+  
+  // Status editing state
+  const [editingPlayerId, setEditingPlayerId] = useState<string | null>(null);
+  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [selectedPlayer, setSelectedPlayer] = useState<TrainingSessionPlayer | null>(null);
+  const [newStatus, setNewStatus] = useState<'PRESENT' | 'ABSENT' | 'LATE'>('PRESENT');
+  const [absentReason, setAbsentReason] = useState('');
+  const [withReason, setWithReason] = useState(false);
+  const [lateReason, setLateReason] = useState('');
+  const [lateWithReason, setLateWithReason] = useState(false);
+  const [arrivalTime, setArrivalTime] = useState('');
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
   // WebSocket hook for real-time updates
   const { isConnected, subscribe } = useWebSocket();
@@ -156,8 +168,6 @@ function TrainingSessionDetailContent() {
         return { color: 'bg-red-100 text-red-800', text: 'Absent' };
       case 'LATE':
         return { color: 'bg-yellow-100 text-yellow-800', text: 'En Retard' };
-      case 'ABSENT_WITHOUT_REASON':
-        return { color: 'bg-orange-100 text-orange-800', text: 'Absent sans Raison' };
       default:
         return { color: 'bg-gray-100 text-gray-800', text: 'Inconnu' };
     }
@@ -166,6 +176,100 @@ function TrainingSessionDetailContent() {
   // Function to format player name
   const formatPlayerName = (firstName: string, lastName: string) => {
     return `${firstName} ${lastName}`;
+  };
+
+  // Function to open status edit modal
+  const openStatusModal = (player: TrainingSessionPlayer) => {
+    setSelectedPlayer(player);
+    setNewStatus(player.status);
+    setAbsentReason('');
+    setWithReason(false);
+    setLateReason('');
+    setLateWithReason(false);
+    setArrivalTime('');
+    setShowStatusModal(true);
+  };
+
+  // Function to close status modal
+  const closeStatusModal = () => {
+    setShowStatusModal(false);
+    setSelectedPlayer(null);
+    setNewStatus('PRESENT');
+    setAbsentReason('');
+    setWithReason(false);
+    setLateReason('');
+    setLateWithReason(false);
+    setArrivalTime('');
+  };
+
+  // Function to validate arrival time for late status
+  const isArrivalTimeValid = () => {
+    if (!trainingSession || !arrivalTime) return false;
+    
+    const today = new Date();
+    const [hours, minutes] = arrivalTime.split(':');
+    today.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+    const arrivalTimeISO = today.toISOString();
+    
+    const startTime = new Date(trainingSession.start_time);
+    const endTime = new Date(trainingSession.end_time);
+    const arrivalDateTime = new Date(arrivalTimeISO);
+    
+    return arrivalDateTime >= startTime && arrivalDateTime <= endTime;
+  };
+
+  // Function to update player status
+  const updatePlayerStatus = async () => {
+    if (!selectedPlayer) return;
+
+    setIsUpdatingStatus(true);
+    try {
+      let endpoint = '';
+      let body: any = {};
+
+      switch (newStatus) {
+        case 'PRESENT':
+          endpoint = `/training-sessions/${trainingSessionId}/change-player-status/${selectedPlayer.player.player_id}/present`;
+          break;
+        case 'ABSENT':
+          endpoint = `/training-sessions/${trainingSessionId}/change-player-status/${selectedPlayer.player.player_id}/absent`;
+          body = {
+            reason: absentReason,
+            with_reason: withReason
+          };
+          break;
+        case 'LATE':
+          if (!isArrivalTimeValid()) {
+            alert('L\'heure d\'arrivée doit être comprise entre le début et la fin de la session d\'entraînement');
+            return;
+          }
+          endpoint = `/training-sessions/${trainingSessionId}/change-player-status/${selectedPlayer.player.player_id}/late`;
+          const today = new Date();
+          const [hours, minutes] = arrivalTime.split(':');
+          today.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+          const arrivalTimeISO = today.toISOString();
+          body = {
+            arrival_time: arrivalTimeISO,
+            with_reason: lateWithReason,
+            reason: lateReason
+          };
+          break;
+      }
+
+      await authenticatedClubPost(endpoint, body);
+      
+      // Refresh data
+      fetchTrainingSession();
+      fetchTrainingSessionPlayers(currentPage);
+      
+      // Close modal
+      closeStatusModal();
+    } catch (err) {
+      console.error('Error updating player status:', err);
+      alert(err instanceof Error ? err.message : 'Erreur lors de la mise à jour du statut');
+    } finally {
+      setIsUpdatingStatus(false);
+    }
   };
 
   // Wait for auth context to finish loading
@@ -370,6 +474,9 @@ function TrainingSessionDetailContent() {
                     <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Statut
                     </th>
+                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -407,6 +514,14 @@ function TrainingSessionDetailContent() {
                             {statusInfo.text}
                           </span>
                         </td>
+                        <td className="px-3 py-4 whitespace-nowrap">
+                          <button
+                            onClick={() => openStatusModal(playerData)}
+                            className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm font-medium"
+                          >
+                            Modifier
+                          </button>
+                        </td>
                       </tr>
                     );
                   })}
@@ -429,6 +544,147 @@ function TrainingSessionDetailContent() {
             </div>
           )}
         </div>
+
+        {/* Status Edit Modal */}
+        {showStatusModal && selectedPlayer && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                Modifier le statut de {formatPlayerName(selectedPlayer.player.first_name, selectedPlayer.player.last_name)}
+              </h3>
+              
+              <div className="space-y-4">
+                {/* Status Selection */}
+                <div>
+                  <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">
+                    Nouveau statut
+                  </label>
+                                     <select
+                     id="status"
+                     value={newStatus}
+                     onChange={(e) => setNewStatus(e.target.value as 'PRESENT' | 'ABSENT' | 'LATE')}
+                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
+                   >
+                    <option value="PRESENT">Présent</option>
+                    <option value="ABSENT">Absent</option>
+                    <option value="LATE">En retard</option>
+                  </select>
+                </div>
+
+                {/* Absent Reason Fields */}
+                {newStatus === 'ABSENT' && (
+                  <>
+                    <div>
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={withReason}
+                          onChange={(e) => setWithReason(e.target.checked)}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="ml-2 text-sm text-gray-700">Avec raison</span>
+                      </label>
+                    </div>
+
+                    {withReason && (
+                      <div>
+                        <label htmlFor="reason" className="block text-sm font-medium text-gray-700 mb-1">
+                          Raison de l'absence
+                        </label>
+                        <textarea
+                          id="reason"
+                          value={absentReason}
+                          onChange={(e) => setAbsentReason(e.target.value)}
+                          placeholder="Entrez la raison de l'absence..."
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
+                          rows={3}
+                        />
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {/* Late Reason Fields */}
+                {newStatus === 'LATE' && (
+                  <>
+                    <div>
+                      <label htmlFor="arrival-time" className="block text-sm font-medium text-gray-700 mb-1">
+                        Heure d'arrivée
+                      </label>
+                      <input
+                        type="time"
+                        id="arrival-time"
+                        value={arrivalTime}
+                        onChange={(e) => setArrivalTime(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
+                        step="300"
+                      />
+                      {trainingSession && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          Heure valide entre {new Date(trainingSession.start_time).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })} et {new Date(trainingSession.end_time).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={lateWithReason}
+                          onChange={(e) => setLateWithReason(e.target.checked)}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="ml-2 text-sm text-gray-700">Avec raison</span>
+                      </label>
+                    </div>
+
+                    {lateWithReason && (
+                      <div>
+                        <label htmlFor="late-reason" className="block text-sm font-medium text-gray-700 mb-1">
+                          Raison du retard
+                        </label>
+                        <textarea
+                          id="late-reason"
+                          value={lateReason}
+                          onChange={(e) => setLateReason(e.target.value)}
+                          placeholder="Entrez la raison du retard..."
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
+                          rows={3}
+                        />
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {/* Action Buttons */}
+                <div className="flex space-x-3 pt-4">
+                  <button
+                    onClick={closeStatusModal}
+                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors text-sm font-medium"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    onClick={updatePlayerStatus}
+                    disabled={isUpdatingStatus || 
+                      (newStatus === 'ABSENT' && withReason && !absentReason.trim()) ||
+                      (newStatus === 'LATE' && (!arrivalTime || (lateWithReason && !lateReason.trim()) || !isArrivalTimeValid()))}
+                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+                  >
+                    {isUpdatingStatus ? (
+                      <div className="flex items-center justify-center">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Mise à jour...
+                      </div>
+                    ) : (
+                      'Mettre à jour'
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
