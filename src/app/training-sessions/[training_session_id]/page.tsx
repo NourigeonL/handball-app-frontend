@@ -8,6 +8,7 @@ import { authenticatedClubGet } from '@/utils/api';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import Pagination from '@/components/Pagination';
 import { useWebSocket } from '@/contexts/WebSocketContext';
+import AddPlayerToTrainingSession from '@/components/AddPlayerToTrainingSession';
 
 interface TrainingSessionPlayer {
   player: {
@@ -336,8 +337,13 @@ function TrainingSessionDetailContent() {
           </div>
         </div>
 
-        {/* Players List */}
-        <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6">
+                 {/* Search Players Section */}
+         <AddPlayerToTrainingSession 
+           trainingSessionId={trainingSessionId} 
+         />
+
+         {/* Players List */}
+         <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 mt-6">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
               Liste des Joueurs
