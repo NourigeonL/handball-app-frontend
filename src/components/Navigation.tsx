@@ -89,6 +89,12 @@ const Navigation: React.FC = () => {
                   Tableau de Bord
                 </Link>
                 <Link 
+                  href="/training-sessions" 
+                  className={getLinkClasses('/training-sessions')}
+                >
+                  Sessions d'Entraînement
+                </Link>
+                <Link 
                   href="/profile" 
                   className={getLinkClasses('/profile')}
                 >
@@ -180,6 +186,13 @@ const Navigation: React.FC = () => {
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   Tableau de Bord
+                </Link>
+                <Link 
+                  href="/training-sessions" 
+                  className={getMobileLinkClasses('/training-sessions')}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Sessions d'Entraînement
                 </Link>
                 <Link 
                   href="/profile" 

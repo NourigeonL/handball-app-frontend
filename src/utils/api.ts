@@ -97,7 +97,14 @@ export async function authenticatedClubRequest<T = any>(
   }
 
   const selectedClub = JSON.parse(selectedClubData);
-  const clubId = selectedClub.id;
+  console.log('Selected club data:', selectedClub);
+  
+  const clubId = selectedClub.club_id || selectedClub.id;
+  console.log('Club ID extracted:', clubId);
+
+  if (!clubId) {
+    throw new Error('ID du club manquant dans les données stockées.');
+  }
 
   // Prepare headers
   const headers: HeadersInit = {

@@ -70,3 +70,21 @@ export interface CollectiveCreationData {
 export interface ClubsResponse {
   clubs: Club[];
 }
+
+export interface TrainingSession {
+  training_session_id: string;
+  start_time: string;
+  end_time: string;
+  number_of_players_present: number;
+  number_of_players_absent: number;
+  number_of_players_late: number;
+  number_of_players_absent_without_reason: number;
+}
+
+export interface PaginatedTrainingSessionsResponse {
+  total_count: number;
+  total_page: number;
+  count: number;
+  page: number;
+  results: TrainingSession[];
+}
