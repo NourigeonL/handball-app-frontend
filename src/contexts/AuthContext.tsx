@@ -3,7 +3,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, AuthState, LoginResponse, UserClub } from '@/types/auth';
 import { decodeGoogleIdToken, formatGoogleUserDisplay } from '@/utils/googleAuth';
-import { useWebSocket } from './WebSocketContext';
 import { useRouter } from 'next/navigation';
 
 interface AuthContextType extends AuthState {
@@ -40,7 +39,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   });
 
   const router = useRouter();
-  const { disconnect } = useWebSocket();
 
   // Check authentication status on mount and when needed
   const checkAuthStatus = async () => {
@@ -352,8 +350,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const logout = async () => {
     try {
-      // Disconnect WebSocket connection
-      disconnect();
+      // The WebSocketContext handles the actual disconnection automatically
+      // when the auth state changes
       
       // Call logout endpoint to clear session
       await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/logout`, {

@@ -220,15 +220,27 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
 
   // Function to send message
   const sendMessage = useCallback((message: any) => {
+    // Auto-connect if not connected (fire and forget)
+    if (!isConnected && !wsConnection) {
+      console.log('Auto-connecting WebSocket for message...');
+      connect().catch(console.error);
+    }
+    
     if (wsConnection && wsConnection.readyState === WebSocket.OPEN) {
       wsConnection.send(JSON.stringify(message));
     } else {
       console.warn('WebSocket is not connected, cannot send message');
     }
-  }, [wsConnection]);
+  }, [wsConnection, isConnected, connect]);
 
   // Function to subscribe to specific event types
   const subscribe = useCallback((eventType: string, callback: (data: WebSocketMessage) => void) => {
+    // Auto-connect if not connected (fire and forget)
+    if (!isConnected && !wsConnection) {
+      console.log('Auto-connecting WebSocket for subscription...');
+      connect().catch(console.error);
+    }
+    
     if (!subscribersRef.current.has(eventType)) {
       subscribersRef.current.set(eventType, new Set());
     }
@@ -244,7 +256,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
         }
       }
     };
-  }, []);
+  }, [isConnected, wsConnection, connect]);
 
   // Function to unsubscribe from specific event types
   const unsubscribe = useCallback((eventType: string, callback: (data: WebSocketMessage) => void) => {
@@ -259,8 +271,8 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
 
   // Connect to WebSocket when component mounts
   useEffect(() => {
-    console.log('WebSocketProvider mounting, connecting...');
-    connect();
+    console.log('WebSocketProvider mounting, but NOT connecting yet...');
+    // Don't connect immediately - wait for actual usage
     
     // Cleanup on unmount
     return () => {
