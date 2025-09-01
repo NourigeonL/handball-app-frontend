@@ -25,6 +25,15 @@ interface AddPlayerToTrainingSessionProps {
   trainingSessionId: string;
 }
 
+interface TrainingSession {
+  training_session_id: string;
+  start_time: string;
+  end_time: string;
+  number_of_players_present: number;
+  number_of_players_absent: number;
+  number_of_players_late: number;
+}
+
 export default function AddPlayerToTrainingSession({ 
   trainingSessionId 
 }: AddPlayerToTrainingSessionProps) {
@@ -43,6 +52,30 @@ export default function AddPlayerToTrainingSession({
   const [selectedPlayerForAbsent, setSelectedPlayerForAbsent] = useState<Player | null>(null);
   const [absentReason, setAbsentReason] = useState('');
   const [withReason, setWithReason] = useState(false);
+  const [markingLate, setMarkingLate] = useState<string | null>(null);
+  const [showLateModal, setShowLateModal] = useState(false);
+  const [selectedPlayerForLate, setSelectedPlayerForLate] = useState<Player | null>(null);
+  const [lateReason, setLateReason] = useState('');
+  const [lateWithReason, setLateWithReason] = useState(false);
+  const [arrivalTime, setArrivalTime] = useState('');
+  const [trainingSession, setTrainingSession] = useState<TrainingSession | null>(null);
+  const [isLoadingTrainingSession, setIsLoadingTrainingSession] = useState(true);
+
+  // Fetch training session details
+  useEffect(() => {
+    const fetchTrainingSession = async () => {
+      try {
+        const data = await authenticatedClubGet<TrainingSession>(`/training-sessions/${trainingSessionId}`);
+        setTrainingSession(data);
+      } catch (err) {
+        console.error('Error fetching training session:', err);
+      } finally {
+        setIsLoadingTrainingSession(false);
+      }
+    };
+
+    fetchTrainingSession();
+  }, [trainingSessionId]);
 
   // Fetch collectives for filtering
   useEffect(() => {
@@ -232,6 +265,91 @@ export default function AddPlayerToTrainingSession({
     setWithReason(false);
   };
 
+  // Open late modal
+  const openLateModal = (player: Player) => {
+    setSelectedPlayerForLate(player);
+    setLateReason('');
+    setLateWithReason(false);
+    // Set default arrival time to current time (time only)
+    const now = new Date();
+    const currentTime = now.toTimeString().slice(0, 5); // Format: HH:MM
+    setArrivalTime(currentTime);
+    setShowLateModal(true);
+  };
+
+  // Validate arrival time is within training session period
+  const isArrivalTimeValid = () => {
+    if (!trainingSession || !arrivalTime) return false;
+    
+    const today = new Date();
+    const [hours, minutes] = arrivalTime.split(':');
+    today.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+    const arrivalTimeISO = today.toISOString();
+    
+    const startTime = new Date(trainingSession.start_time);
+    const endTime = new Date(trainingSession.end_time);
+    const arrivalDateTime = new Date(arrivalTimeISO);
+    
+    return arrivalDateTime >= startTime && arrivalDateTime <= endTime;
+  };
+
+  // Mark player as late
+  const markPlayerAsLate = async () => {
+    if (!selectedPlayerForLate) return;
+
+    // Validate arrival time
+    if (!isArrivalTimeValid()) {
+      setError('L\'heure d\'arrivée doit être comprise entre le début et la fin de la session d\'entraînement');
+      return;
+    }
+
+    setMarkingLate(selectedPlayerForLate.player_id);
+    setError(null);
+
+    try {
+      // Convert time-only input to full ISO string for today's date
+      const today = new Date();
+      const [hours, minutes] = arrivalTime.split(':');
+      today.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+      const arrivalTimeISO = today.toISOString();
+
+      await authenticatedClubPost(
+        `/training-sessions/${trainingSessionId}/change-player-status/${selectedPlayerForLate.player_id}/late`,
+        {
+          arrival_time: arrivalTimeISO,
+          with_reason: lateWithReason,
+          reason: lateReason
+        }
+      );
+      
+      // Remove the player from search results
+      setSearchResults(prev => prev.filter(player => player.player_id !== selectedPlayerForLate.player_id));
+      
+      // Clear search if no more results
+      if (searchResults.length === 1) {
+        setSearchQuery('');
+      }
+
+      // Close modal
+      setShowLateModal(false);
+      setSelectedPlayerForLate(null);
+    } catch (err) {
+      console.error('Error marking player as late:', err);
+      setError(err instanceof Error ? err.message : 'Erreur lors du marquage du joueur comme en retard');
+    } finally {
+      setMarkingLate(null);
+    }
+  };
+
+  // Close late modal
+  const closeLateModal = () => {
+    setShowLateModal(false);
+    setSelectedPlayerForLate(null);
+    setLateReason('');
+    setLateWithReason(false);
+    setArrivalTime('');
+  };
+
   // Cleanup timeout on unmount
   useEffect(() => {
     return () => {
@@ -348,7 +466,7 @@ export default function AddPlayerToTrainingSession({
                                            <div className="flex space-x-2">
                         <button
                           onClick={() => markPlayerAsPresent(player.player_id)}
-                          disabled={markingPresent === player.player_id || markingAbsent === player.player_id}
+                          disabled={markingPresent === player.player_id || markingAbsent === player.player_id || markingLate === player.player_id}
                           className="px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors text-sm font-medium"
                         >
                           {markingPresent === player.player_id ? (
@@ -362,7 +480,7 @@ export default function AddPlayerToTrainingSession({
                         </button>
                         <button
                           onClick={() => openAbsentModal(player)}
-                          disabled={markingPresent === player.player_id || markingAbsent === player.player_id}
+                          disabled={markingPresent === player.player_id || markingAbsent === player.player_id || markingLate === player.player_id}
                           className="px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors text-sm font-medium"
                         >
                           {markingAbsent === player.player_id ? (
@@ -372,6 +490,20 @@ export default function AddPlayerToTrainingSession({
                             </div>
                           ) : (
                             'Absent'
+                          )}
+                        </button>
+                        <button
+                          onClick={() => openLateModal(player)}
+                          disabled={markingPresent === player.player_id || markingAbsent === player.player_id || markingLate === player.player_id}
+                          className="px-3 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+                        >
+                          {markingLate === player.player_id ? (
+                            <div className="flex items-center">
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                              Marquage...
+                            </div>
+                          ) : (
+                            'En retard'
                           )}
                         </button>
                       </div>
@@ -465,7 +597,90 @@ export default function AddPlayerToTrainingSession({
              </div>
            </div>
          </div>
-       )}
-     </div>
-   );
- }
+               )}
+
+        {/* Late Modal */}
+        {showLateModal && selectedPlayerForLate && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                Marquer {formatPlayerName(selectedPlayerForLate.first_name, selectedPlayerForLate.last_name)} comme en retard
+              </h3>
+              
+              <div className="space-y-4">
+                <div>
+                  <label htmlFor="arrival-time" className="block text-sm font-medium text-gray-700 mb-1">
+                    Heure d'arrivée
+                  </label>
+                                     <input
+                     type="time"
+                     id="arrival-time"
+                     value={arrivalTime}
+                     onChange={(e) => setArrivalTime(e.target.value)}
+                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
+                     step="300"
+                   />
+                   {trainingSession && (
+                     <p className="text-xs text-gray-500 mt-1">
+                       Heure valide entre {new Date(trainingSession.start_time).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })} et {new Date(trainingSession.end_time).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                     </p>
+                   )}
+                </div>
+
+                <div>
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={lateWithReason}
+                      onChange={(e) => setLateWithReason(e.target.checked)}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="ml-2 text-sm text-gray-700">Avec raison</span>
+                  </label>
+                </div>
+
+                {lateWithReason && (
+                  <div>
+                    <label htmlFor="late-reason" className="block text-sm font-medium text-gray-700 mb-1">
+                      Raison du retard
+                    </label>
+                    <textarea
+                      id="late-reason"
+                      value={lateReason}
+                      onChange={(e) => setLateReason(e.target.value)}
+                      placeholder="Entrez la raison du retard..."
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
+                      rows={3}
+                    />
+                  </div>
+                )}
+
+                <div className="flex space-x-3 pt-4">
+                  <button
+                    onClick={closeLateModal}
+                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors text-sm font-medium"
+                  >
+                    Annuler
+                  </button>
+                                     <button
+                     onClick={markPlayerAsLate}
+                     disabled={markingLate === selectedPlayerForLate.player_id || !arrivalTime || (lateWithReason && !lateReason.trim()) || !isArrivalTimeValid()}
+                     className="flex-1 px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+                   >
+                    {markingLate === selectedPlayerForLate.player_id ? (
+                      <div className="flex items-center justify-center">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Marquage...
+                      </div>
+                    ) : (
+                      'Marquer en retard'
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
