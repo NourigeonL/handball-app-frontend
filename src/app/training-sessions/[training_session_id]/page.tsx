@@ -1,0 +1,433 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useParams } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
+import { TrainingSession } from '@/types/clubs';
+import { authenticatedClubGet } from '@/utils/api';
+import ProtectedRoute from '@/components/ProtectedRoute';
+import Pagination from '@/components/Pagination';
+import { useWebSocket } from '@/contexts/WebSocketContext';
+
+interface TrainingSessionPlayer {
+  player: {
+    player_id: string;
+    first_name: string;
+    last_name: string;
+    gender: 'M' | 'F';
+    date_of_birth: string;
+    license_number: string;
+    license_type: string;
+    collectives: any[];
+  };
+  status: 'PRESENT' | 'ABSENT' | 'LATE' | 'ABSENT_WITHOUT_REASON';
+}
+
+interface PaginatedTrainingSessionPlayersResponse {
+  total_count: number;
+  total_page: number;
+  count: number;
+  page: number;
+  results: TrainingSessionPlayer[];
+}
+
+export default function TrainingSessionDetailPage() {
+  return (
+    <ProtectedRoute>
+      <TrainingSessionDetailContent />
+    </ProtectedRoute>
+  );
+}
+
+function TrainingSessionDetailContent() {
+  const params = useParams();
+  const trainingSessionId = params.training_session_id as string;
+  const { isClubSelected, isLoading: authLoading } = useAuth();
+  
+  const [trainingSession, setTrainingSession] = useState<TrainingSession | null>(null);
+  const [players, setPlayers] = useState<TrainingSessionPlayer[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [pagination, setPagination] = useState({
+    total_count: 0,
+    total_page: 0,
+    count: 0,
+    page: 0
+  });
+  const [currentPage, setCurrentPage] = useState(0);
+  const perPage = 10;
+
+  // WebSocket hook for real-time updates
+  const { isConnected, subscribe } = useWebSocket();
+
+  // Function to fetch training session details
+  const fetchTrainingSession = async () => {
+    try {
+      console.log('Fetching training session details for ID:', trainingSessionId);
+      const data = await authenticatedClubGet<TrainingSession>(
+        `/training-sessions/${trainingSessionId}`
+      );
+      console.log('Training session data received:', data);
+      setTrainingSession(data);
+    } catch (err) {
+      console.error('Error fetching training session:', err);
+      setError(err instanceof Error ? err.message : 'Échec de la récupération de la session d\'entraînement');
+    }
+  };
+
+  // Function to fetch training session players
+  const fetchTrainingSessionPlayers = async (page: number = 0) => {
+    try {
+      console.log('Fetching training session players for page:', page);
+      const data = await authenticatedClubGet<PaginatedTrainingSessionPlayersResponse>(
+        `/training-sessions/${trainingSessionId}/players?page=${page}&per_page=${perPage}`
+      );
+      console.log('Training session players data received:', data);
+      setPlayers(data.results);
+      setPagination({
+        total_count: data.total_count,
+        total_page: data.total_page,
+        count: data.count,
+        page: data.page
+      });
+    } catch (err) {
+      console.error('Error fetching training session players:', err);
+      setError(err instanceof Error ? err.message : 'Échec de la récupération des joueurs');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!isClubSelected) {
+      setError('Aucun club sélectionné. Veuillez sélectionner un club.');
+      setLoading(false);
+      return;
+    }
+
+    if (trainingSessionId) {
+      fetchTrainingSession();
+      fetchTrainingSessionPlayers();
+    }
+  }, [isClubSelected, trainingSessionId]);
+
+  // Subscribe to WebSocket events for real-time updates
+  useEffect(() => {
+    const unsubscribeTrainingSession = subscribe('club_training_session_updated', (data) => {
+      console.log('Training session update received, refreshing data...');
+      fetchTrainingSession();
+      fetchTrainingSessionPlayers(currentPage);
+    });
+
+    // Cleanup subscriptions on unmount
+    return () => {
+      unsubscribeTrainingSession();
+    };
+  }, [subscribe, currentPage, trainingSessionId]);
+
+  // Function to change page
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 0 && newPage < pagination.total_page) {
+      setCurrentPage(newPage);
+      fetchTrainingSessionPlayers(newPage);
+    }
+  };
+
+  // Function to format date
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('fr-FR');
+  };
+
+  // Function to format time
+  const formatTime = (timeString: string) => {
+    return new Date(timeString).toLocaleTimeString('fr-FR', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  // Function to get status color and text
+  const getStatusInfo = (status: string) => {
+    switch (status) {
+      case 'PRESENT':
+        return { color: 'bg-green-100 text-green-800', text: 'Présent' };
+      case 'ABSENT':
+        return { color: 'bg-red-100 text-red-800', text: 'Absent' };
+      case 'LATE':
+        return { color: 'bg-yellow-100 text-yellow-800', text: 'En Retard' };
+      case 'ABSENT_WITHOUT_REASON':
+        return { color: 'bg-orange-100 text-orange-800', text: 'Absent sans Raison' };
+      default:
+        return { color: 'bg-gray-100 text-gray-800', text: 'Inconnu' };
+    }
+  };
+
+  // Function to format player name
+  const formatPlayerName = (firstName: string, lastName: string) => {
+    return `${firstName} ${lastName}`;
+  };
+
+  // Wait for auth context to finish loading
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="animate-spin rounded-full h-8 w-8 sm:h-12 sm:w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="animate-spin rounded-full h-8 w-8 sm:h-12 sm:w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (!isClubSelected) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="text-center max-w-sm mx-auto">
+          <div className="text-gray-600 text-base sm:text-lg mb-4">Aucun club sélectionné</div>
+          <p className="text-gray-500 mb-6 text-sm sm:text-base">Veuillez sélectionner un club depuis le tableau de bord</p>
+          <a 
+            href="/" 
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm sm:text-base"
+          >
+            Retour au Tableau de Bord
+          </a>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="text-center max-w-sm mx-auto">
+          <div className="text-red-600 text-base sm:text-lg font-semibold mb-2">Erreur</div>
+          <div className="text-gray-600 mb-4 text-sm sm:text-base">{error}</div>
+          <a 
+            href="/training-sessions" 
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm sm:text-base"
+          >
+            Retour aux Sessions
+          </a>
+        </div>
+      </div>
+    );
+  }
+
+  if (!trainingSession) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="text-center max-w-sm mx-auto">
+          <div className="text-gray-600 text-base sm:text-lg mb-4">Session non trouvée</div>
+          <p className="text-gray-500 mb-6 text-sm sm:text-base">La session d'entraînement demandée n'existe pas</p>
+          <a 
+            href="/training-sessions" 
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm sm:text-base"
+          >
+            Retour aux Sessions
+          </a>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-4 sm:p-6 lg:p-8">
+      <div className="max-w-7xl mx-auto">
+        {/* Breadcrumb */}
+        <div className="mb-6">
+          <nav className="flex" aria-label="Breadcrumb">
+            <ol className="inline-flex items-center space-x-1 md:space-x-3">
+              <li className="inline-flex items-center">
+                <a 
+                  href="/" 
+                  className="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600"
+                >
+                  Tableau de Bord
+                </a>
+              </li>
+              <li>
+                <div className="flex items-center">
+                  <svg className="w-3 h-3 text-gray-400 mx-1" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
+                    <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m1 9 4-4-4-4"/>
+                  </svg>
+                  <a 
+                    href="/training-sessions" 
+                    className="ml-1 text-sm font-medium text-gray-700 hover:text-blue-600 md:ml-2"
+                  >
+                    Sessions d'Entraînement
+                  </a>
+                </div>
+              </li>
+              <li aria-current="page">
+                <div className="flex items-center">
+                  <svg className="w-3 h-3 text-gray-400 mx-1" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
+                    <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m1 9 4-4-4-4"/>
+                  </svg>
+                  <span className="ml-1 text-sm font-medium text-gray-500 md:ml-2">Détails</span>
+                </div>
+              </li>
+            </ol>
+          </nav>
+        </div>
+
+        {/* Page Header */}
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2 text-center sm:text-left">
+            Session d'Entraînement
+          </h1>
+          <p className="text-gray-600 text-center sm:text-left">
+            Détails de la session du {formatDate(trainingSession.start_time)}
+          </p>
+        </div>
+
+        {/* Training Session Details */}
+        <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 mb-6">
+          <h2 className="text-xl font-bold text-gray-900 mb-4">Informations de la Session</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="text-sm font-medium text-gray-500">Date</div>
+              <div className="text-lg font-semibold text-gray-900">{formatDate(trainingSession.start_time)}</div>
+            </div>
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="text-sm font-medium text-gray-500">Heure</div>
+              <div className="text-lg font-semibold text-gray-900">
+                {formatTime(trainingSession.start_time)} - {formatTime(trainingSession.end_time)}
+              </div>
+            </div>
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="text-sm font-medium text-gray-500">Durée</div>
+              <div className="text-lg font-semibold text-gray-900">
+                {Math.round((new Date(trainingSession.end_time).getTime() - new Date(trainingSession.start_time).getTime()) / (1000 * 60))} min
+              </div>
+            </div>
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="text-sm font-medium text-gray-500">Total Joueurs</div>
+              <div className="text-lg font-semibold text-gray-900">
+                {trainingSession.number_of_players_present + 
+                 trainingSession.number_of_players_absent + 
+                 trainingSession.number_of_players_late + 
+                 trainingSession.number_of_players_absent_without_reason}
+              </div>
+            </div>
+          </div>
+
+          {/* Attendance Summary */}
+          <div className="mt-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-3">Résumé de Présence</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-600">{trainingSession.number_of_players_present}</div>
+                <div className="text-sm text-gray-500">Présents</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-red-600">{trainingSession.number_of_players_absent}</div>
+                <div className="text-sm text-gray-500">Absents</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-yellow-600">{trainingSession.number_of_players_late}</div>
+                <div className="text-sm text-gray-500">En Retard</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-orange-600">{trainingSession.number_of_players_absent_without_reason}</div>
+                <div className="text-sm text-gray-500">Absents sans Raison</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Players List */}
+        <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
+              Liste des Joueurs
+            </h2>
+            <div className="text-sm text-gray-500">
+              {pagination.total_count} joueur{pagination.total_count !== 1 ? 's' : ''} au total
+            </div>
+          </div>
+          
+          {players.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Joueur
+                    </th>
+                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Licence
+                    </th>
+                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Type de Licence
+                    </th>
+                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Statut
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {players.map((playerData) => {
+                    const statusInfo = getStatusInfo(playerData.status);
+                    return (
+                      <tr key={playerData.player.player_id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-3 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <div className="flex-shrink-0 h-10 w-10">
+                              <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
+                                <span className="text-sm font-medium text-gray-700">
+                                  {playerData.player.first_name.charAt(0)}{playerData.player.last_name.charAt(0)}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="ml-4">
+                              <div className="text-sm font-medium text-gray-900">
+                                {formatPlayerName(playerData.player.first_name, playerData.player.last_name)}
+                              </div>
+                              <div className="text-sm text-gray-500">
+                                {playerData.player.gender === 'M' ? 'Homme' : 'Femme'} • {formatDate(playerData.player.date_of_birth)}
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {playerData.player.license_number}
+                        </td>
+                        <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {playerData.player.license_type}
+                        </td>
+                        <td className="px-3 py-4 whitespace-nowrap">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusInfo.color}`}>
+                            {statusInfo.text}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+              
+              {/* Pagination Controls */}
+              <Pagination
+                currentPage={currentPage}
+                totalPages={pagination.total_page}
+                totalCount={pagination.total_count}
+                currentCount={pagination.count}
+                onPageChange={handlePageChange}
+              />
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <div className="text-gray-400 text-lg mb-2">Aucun joueur</div>
+              <p className="text-gray-300 text-sm">Les joueurs de cette session apparaîtront ici</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

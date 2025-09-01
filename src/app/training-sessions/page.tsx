@@ -250,8 +250,12 @@ function TrainingSessionsContent() {
                                  session.number_of_players_absent_without_reason;
                     const attendanceRate = total > 0 ? (session.number_of_players_present / total) * 100 : 0;
                     
-                    return (
-                                             <tr key={session.training_session_id} className="hover:bg-gray-50 transition-colors">
+                                         return (
+                       <tr 
+                         key={session.training_session_id} 
+                         className="hover:bg-gray-50 transition-colors cursor-pointer"
+                         onClick={() => window.location.href = `/training-sessions/${session.training_session_id}`}
+                       >
                          <td className="px-3 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                            {formatDate(session.start_time)}
                          </td>
