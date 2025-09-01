@@ -3,6 +3,8 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, AuthState, LoginResponse, UserClub } from '@/types/auth';
 import { decodeGoogleIdToken, formatGoogleUserDisplay } from '@/utils/googleAuth';
+import { useWebSocket } from './WebSocketContext';
+import { useRouter } from 'next/navigation';
 
 interface AuthContextType extends AuthState {
   login: (googleToken: string) => Promise<void>;
@@ -37,8 +39,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isClubSelected: false,
   });
 
+  const router = useRouter();
+  const { disconnect } = useWebSocket();
+
   // Check authentication status on mount and when needed
   const checkAuthStatus = async () => {
+    // Don't check auth status if user is already logged out and we're not loading
+    if (!authState.isLoading && !authState.isAuthenticated) {
+      console.log('User already logged out, skipping auth check');
+      return;
+    }
+
     try {
       setAuthState(prev => ({ ...prev, isLoading: true }));
       
@@ -341,6 +352,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const logout = async () => {
     try {
+      // Disconnect WebSocket connection
+      disconnect();
+      
       // Call logout endpoint to clear session
       await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/logout`, {
         method: 'POST',
@@ -350,9 +364,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.error('Logout error:', error);
     }
     
-    // Clear local storage
-    localStorage.removeItem('selectedClub');
+    // Clear all localStorage data
+    localStorage.clear();
     
+    // Update auth state
     setAuthState({
       user: null,
       isAuthenticated: false,
@@ -361,6 +376,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       userClubs: [],
       isClubSelected: false,
     });
+
+    // Redirect to main page
+    router.push('/');
   };
 
   const loginToClub = async (clubId: string) => {

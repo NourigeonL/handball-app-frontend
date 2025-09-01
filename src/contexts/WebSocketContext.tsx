@@ -12,6 +12,7 @@ interface WebSocketContextType {
   sendMessage: (message: any) => void;
   subscribe: (eventType: string, callback: (data: WebSocketMessage) => void) => () => void;
   unsubscribe: (eventType: string, callback: (data: WebSocketMessage) => void) => void;
+  disconnect: () => void;
 }
 
 const WebSocketContext = createContext<WebSocketContextType | null>(null);
@@ -276,7 +277,8 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
     isConnected,
     sendMessage,
     subscribe,
-    unsubscribe
+    unsubscribe,
+    disconnect
   };
 
   return (

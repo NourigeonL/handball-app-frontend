@@ -31,15 +31,15 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <AuthProvider>
-          <WebSocketProvider>
+        <WebSocketProvider>
+          <AuthProvider>
             <Navigation />
             <main className="min-h-screen bg-gray-50">
               {children}
             </main>
             <ClubSelectionWrapper />
-          </WebSocketProvider>
-        </AuthProvider>
+          </AuthProvider>
+        </WebSocketProvider>
       </body>
     </html>
   );
