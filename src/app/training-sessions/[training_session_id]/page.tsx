@@ -272,6 +272,29 @@ function TrainingSessionDetailContent() {
     }
   };
 
+  // Function to delete player from training session
+  const deletePlayerFromSession = async (playerId: string) => {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer ce joueur de la session ? Cette action est irréversible.')) {
+      return;
+    }
+
+    try {
+      await authenticatedClubPost(
+        `/training-sessions/${trainingSessionId}/remove-player/${playerId}`
+      );
+      
+      // Refresh data
+      fetchTrainingSession();
+      fetchTrainingSessionPlayers(currentPage);
+      
+      // Close modal
+      closeStatusModal();
+    } catch (err) {
+      console.error('Error deleting player from session:', err);
+      alert(err instanceof Error ? err.message : 'Erreur lors de la suppression du joueur');
+    }
+  };
+
   // Wait for auth context to finish loading
   if (authLoading) {
     return (
@@ -680,6 +703,18 @@ function TrainingSessionDetailContent() {
                       'Mettre à jour'
                     )}
                   </button>
+                </div>
+                
+                {/* Delete Player Section */}
+                <div className="border-t border-gray-200 pt-4 mt-4">
+                  <div className="text-center">
+                    <button
+                      onClick={() => deletePlayerFromSession(selectedPlayer.player.player_id)}
+                      className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-sm font-medium"
+                    >
+                      Supprimer le joueur de la session
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
